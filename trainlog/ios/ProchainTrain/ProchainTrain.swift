@@ -8,53 +8,171 @@
 import WidgetKit
 import SwiftUI
 
+struct Trip: Codable {
+    let id: String
+    let departureTime: String
+    let departureStation: String
+    let arrivalStation: String
+    let trainNumber: String?
+    let trainType: String?
+    let distance: Double?
+    let price: Double?
+}
+
 struct Provider: TimelineProvider {
     func placeholder(in context: Context) -> SimpleEntry {
-        SimpleEntry(date: Date(), emoji: "😀")
+        SimpleEntry(date: Date(), nextTrips: nil)
     }
 
     func getSnapshot(in context: Context, completion: @escaping (SimpleEntry) -> ()) {
-        let entry = SimpleEntry(date: Date(), emoji: "😀")
+        let data = UserDefaults(suiteName: "group.TrainLog.prochainTrain")
+        
+        var trips: [Trip]?
+        if let jsonString = data?.string(forKey: "nextTrips"),
+           let jsonData = jsonString.data(using: .utf8) {
+            trips = try? JSONDecoder().decode([Trip].self, from: jsonData)
+        }
+        
+        let entry = SimpleEntry(date: Date(), nextTrips: trips)
         completion(entry)
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<Entry>) -> ()) {
-        var entries: [SimpleEntry] = []
-
-        // Generate a timeline consisting of five entries an hour apart, starting from the current date.
-        let currentDate = Date()
-        for hourOffset in 0 ..< 5 {
-            let entryDate = Calendar.current.date(byAdding: .hour, value: hourOffset, to: currentDate)!
-            let entry = SimpleEntry(date: entryDate, emoji: "😀")
-            entries.append(entry)
+        let data = UserDefaults(suiteName: "group.TrainLog.prochainTrain")
+        
+        var trips: [Trip]?
+        if let jsonString = data?.string(forKey: "nextTrips"),
+           let jsonData = jsonString.data(using: .utf8) {
+            trips = try? JSONDecoder().decode([Trip].self, from: jsonData)
         }
-
-        let timeline = Timeline(entries: entries, policy: .atEnd)
+        
+        let entry = SimpleEntry(date: Date(), nextTrips: trips)
+        let timeline = Timeline(entries: [entry], policy: .after(Date().addingTimeInterval(3600)))
         completion(timeline)
     }
-
-//    func relevances() async -> WidgetRelevances<Void> {
-//        // Generate a list containing the contexts this widget is relevant in.
-//    }
 }
 
 struct SimpleEntry: TimelineEntry {
     let date: Date
-    let emoji: String
+    let nextTrips: [Trip]?
 }
 
 struct ProchainTrainEntryView : View {
+    
+    // Detect the current Family
+    @Environment(\.widgetFamily) var family
+    
+    
     var entry: Provider.Entry
+    
+    var nextTrip: Trip? {
+        entry.nextTrips?.first
+    }
+    
+    private let inputFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSS"
+        return formatter
+    }()
+    
+    private let outputFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEE dd MMM '-' HH:mm"
+        formatter.locale = Locale(identifier: "fr_FR")
+        return formatter
+    }()
 
     var body: some View {
-        VStack {
-            Text("Time:")
-            Text(entry.date, style: .time)
+        
+        if family == .accessoryCircular {
+            VStack(alignment: .center, spacing: 0) {
+                if let trip = nextTrip {
+                    if let departureDate = inputFormatter.date(from: trip.departureTime) {
+                        // Nombre de jours
+                        let days = Calendar.current.dateComponents([.day], from: Date(), to: departureDate).day ?? 0
+                        
+                        ZStack {
+                                        Circle()
+                                            .fill(Color.white)
+                                            .frame(width: 15, height: 15)
 
-            Text("Emoji:")
-            Text(entry.emoji)
-        }
-    }
+                                        Image(systemName: "train.side.front.car")
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fit)
+                                            .frame(width: 10, height: 10)
+                                            .foregroundColor(.black) // Couleur inversée
+                                    }
+                        
+                        HStack(spacing: 4) {
+                                            Text("\(abs(days)) jours")
+                                                .font(.system(size: 17, weight: .semibold))
+                                                .padding(.top, 4)
+
+                                        }
+                        // Destination (6 premiers caractères)
+                                        Text(String(trip.arrivalStation.prefix(6)))
+                                            .font(.system(size: 12))
+                                            .foregroundColor(.gray)
+                    }
+                }}
+            
+        } else {
+            // Build Widget for other families
+            
+            
+            
+            VStack(alignment: .leading, spacing: 0) {
+                if let trip = nextTrip {
+                    // En-tête avec logo et numéro de train
+                    HStack {
+                        Image("SNCF")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 35, height: 20)
+                        
+                        Spacer()
+                        
+                        VStack(alignment: .trailing, spacing: 2) {
+                            Text(trip.trainNumber ?? "")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(.gray)
+                            Text("#\(trip.trainType ?? "")")
+                                .font(.system(size: 12))
+                                .foregroundColor(.gray.opacity(0.7))
+                        }
+                    }
+                    Spacer()
+                    
+                    // Destination
+                    HStack(spacing: 4) {
+                        Image(systemName: "train.side.front.car")
+                            .foregroundColor(.blue)
+                        Text(trip.arrivalStation)
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.blue)
+                    }
+                    
+                    
+                    if let departureDate = inputFormatter.date(from: trip.departureTime) {
+                        // Nombre de jours
+                        let days = Calendar.current.dateComponents([.day], from: Date(), to: departureDate).day ?? 0
+                        Text("\(abs(days)) Jours")
+                            .font(.system(size: 20, weight: .semibold))
+                            .padding(.top, 4)
+                        
+                        // Date et heure
+                        Text(outputFormatter.string(from: departureDate))
+                            .font(.system(size: 12))
+                            .foregroundColor(.gray)
+                    }
+                } else {
+                    Text("Aucun voyage prévu")
+                        .font(.system(size: 14))
+                        .foregroundColor(.secondary)
+                }
+            }
+            .padding()
+        }}
 }
 
 struct ProchainTrain: Widget {
@@ -64,21 +182,37 @@ struct ProchainTrain: Widget {
         StaticConfiguration(kind: kind, provider: Provider()) { entry in
             if #available(iOS 17.0, *) {
                 ProchainTrainEntryView(entry: entry)
-                    .containerBackground(.fill.tertiary, for: .widget)
+                    .containerBackground(.white, for: .widget)
             } else {
                 ProchainTrainEntryView(entry: entry)
                     .padding()
-                    .background()
+                    .background(Color.white)
             }
         }
-        .configurationDisplayName("My Widget")
-        .description("This is an example widget.")
+        .configurationDisplayName("Prochain Voyage")
+        .contentMarginsDisabled() // Here
+        .description("Affiche le nombre de jours avant votre prochain départ.")
+        .supportedFamilies([
+              .systemSmall,
+              .accessoryCircular
+          ])
     }
 }
 
 #Preview(as: .systemSmall) {
     ProchainTrain()
 } timeline: {
-    SimpleEntry(date: .now, emoji: "😀")
-    SimpleEntry(date: .now, emoji: "🤩")
+    SimpleEntry(date: .now, nextTrips: [
+        Trip(
+            id: "1",
+            departureTime: "2025-04-24T14:04:00.000",
+            departureStation: "Paris",
+            arrivalStation: "Lyon",
+            trainNumber: "TGV 6942",
+            trainType: "TGV",
+            distance: 450,
+            price: 65
+        )
+    ])
+    SimpleEntry(date: .now, nextTrips: nil)
 }

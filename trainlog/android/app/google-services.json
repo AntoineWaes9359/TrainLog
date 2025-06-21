@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "978943158438",
+    "project_id": "trainlog-3b14a",
+    "storage_bucket": "trainlog-3b14a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:978943158438:android:ffaefd910da446d668ec67",
+        "android_client_info": {
+          "package_name": "com.antoinewaes.TrainLog"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBpsGpdLxhcgssF2vvgMAONmInBPBBnQBk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
