@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:trainlog/theme/colors.dart';
+import '../providers/trip_provider_improved.dart';
+import '../models/trip.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../providers/trip_provider.dart';
 import '../services/sncf_service.dart';
-import '../models/trip.dart';
-import '../config/api_keys.dart';
 import '../widgets/train_logo.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../config/api_keys.dart';
 import '../utils/distance_calculator.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:uuid/uuid.dart';

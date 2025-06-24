@@ -1,0 +1,471 @@
+{
+  "@@locale": "fr",
+  "appTitle": "TrainLog",
+  "@appTitle": {
+    "description": "Le titre de l'application"
+  },
+  
+  "navigationTrips": "Trajets",
+  "@navigationTrips": {
+    "description": "Label de navigation pour les trajets"
+  },
+  
+  "navigationHistory": "Historique",
+  "@navigationHistory": {
+    "description": "Label de navigation pour l'historique"
+  },
+  
+  "navigationStats": "Stats",
+  "@navigationStats": {
+    "description": "Label de navigation pour les statistiques"
+  },
+  
+  "navigationProfile": "Profil",
+  "@navigationProfile": {
+    "description": "Label de navigation pour le profil"
+  },
+
+  "upcomingTitle": "À venir",
+  "@upcomingTitle": {
+    "description": "Titre de l'écran des trajets à venir"
+  },
+
+  "nextTripTitle": "Prochain trajet",
+  "@nextTripTitle": {
+    "description": "Titre de l'encart du prochain trajet"
+  },
+
+  "timeUnitHours": "HEURES",
+  "@timeUnitHours": {
+    "description": "Unité de temps pour les heures"
+  },
+
+  "timeUnitDays": "JOURS",
+  "@timeUnitDays": {
+    "description": "Unité de temps pour les jours"
+  },
+
+  "copiedToClipboard": "Copié dans le presse-papier",
+  "@copiedToClipboard": {
+    "description": "Message de confirmation de copie"
+  },
+
+  "editSeatTitle": "Modifier le siège",
+  "@editSeatTitle": {
+    "description": "Titre de la boîte de dialogue de modification du siège"
+  },
+
+  "seatNumberLabel": "Numéro de siège",
+  "@seatNumberLabel": {
+    "description": "Label du champ numéro de siège"
+  },
+
+  "seatNumberHint": "Ex: 12A",
+  "@seatNumberHint": {
+    "description": "Texte d'aide pour le numéro de siège"
+  },
+
+  "cancelButton": "Annuler",
+  "@cancelButton": {
+    "description": "Bouton d'annulation"
+  },
+
+  "saveButton": "Enregistrer",
+  "@saveButton": {
+    "description": "Bouton de sauvegarde"
+  },
+
+  "deleteTripTitle": "Supprimer le trajet",
+  "@deleteTripTitle": {
+    "description": "Titre de la boîte de dialogue de suppression"
+  },
+
+  "deleteTripConfirmation": "Êtes-vous sûr de vouloir supprimer ce trajet ?",
+  "@deleteTripConfirmation": {
+    "description": "Message de confirmation de suppression"
+  },
+
+  "deleteButton": "Supprimer",
+  "@deleteButton": {
+    "description": "Bouton de suppression"
+  },
+
+  "departureLabel": "Départ",
+  "@departureLabel": {
+    "description": "Label pour le départ"
+  },
+
+  "arrivalLabel": "Arrivée",
+  "@arrivalLabel": {
+    "description": "Label pour l'arrivée"
+  },
+
+  "distanceLabel": "Distance",
+  "@distanceLabel": {
+    "description": "Label pour la distance"
+  },
+
+  "durationLabel": "Durée",
+  "@durationLabel": {
+    "description": "Label pour la durée"
+  },
+
+  "trainNumberLabel": "Numéro de train",
+  "@trainNumberLabel": {
+    "description": "Label pour le numéro de train"
+  },
+
+  "ticketNumberLabel": "Numéro de billet",
+  "@ticketNumberLabel": {
+    "description": "Label pour le numéro de billet"
+  },
+
+  "seatLabel": "Siège",
+  "@seatLabel": {
+    "description": "Label pour le siège"
+  },
+
+  "dossierLabel": "Dossier",
+  "@dossierLabel": {
+    "description": "Label pour le dossier"
+  },
+
+  "copyButton": "COPIER",
+  "@copyButton": {
+    "description": "Bouton de copie"
+  },
+
+  "pasteButton": "COLLER",
+  "@pasteButton": {
+    "description": "Bouton de coller"
+  },
+
+  "tapToEdit": "Tap to Edit",
+  "@tapToEdit": {
+    "description": "Texte d'aide pour éditer"
+  },
+
+  "classLabel": "Classe",
+  "@classLabel": {
+    "description": "Label pour la classe"
+  },
+
+  "carLabel": "Voiture",
+  "@carLabel": {
+    "description": "Label pour la voiture"
+  },
+
+  "informationTitle": "Informations",
+  "@informationTitle": {
+    "description": "Titre de la section informations"
+  },
+
+  "trainInfoLabel": "Train",
+  "@trainInfoLabel": {
+    "description": "Label pour les informations du train"
+  },
+
+  "dateInfoLabel": "Date",
+  "@dateInfoLabel": {
+    "description": "Label pour la date"
+  },
+
+  "durationInfoLabel": "Durée",
+  "@durationInfoLabel": {
+    "description": "Label pour la durée"
+  },
+
+  "distanceInfoLabel": "Distance",
+  "@distanceInfoLabel": {
+    "description": "Label pour la distance"
+  },
+
+  "myHistoryTitle": "Mon historique sur ce trajet",
+  "@myHistoryTitle": {
+    "description": "Titre de la section historique"
+  },
+
+  "tripsLabel": "Trajets",
+  "@tripsLabel": {
+    "description": "Label pour le nombre de trajets"
+  },
+
+  "travelTimeLabel": "Temps de trajet",
+  "@travelTimeLabel": {
+    "description": "Label pour le temps de trajet"
+  },
+
+  "dossierNumberHint": "Numéro de dossier",
+  "@dossierNumberHint": {
+    "description": "Texte d'aide pour le numéro de dossier"
+  },
+
+  "seatNumberEditHint": "Numéro de siège (ex: 12A)",
+  "@seatNumberEditHint": {
+    "description": "Texte d'aide pour l'édition du numéro de siège"
+  },
+
+  "secondClass": "Seconde",
+  "@secondClass": {
+    "description": "Classe seconde"
+  },
+
+  "firstClass": "Première",
+  "@firstClass": {
+    "description": "Classe première"
+  },
+
+  "businessClass": "Business",
+  "@businessClass": {
+    "description": "Classe business"
+  },
+
+  "saveChangesButton": "Sauvegarder",
+  "@saveChangesButton": {
+    "description": "Bouton de sauvegarde des modifications"
+  },
+
+  "bookingDetailsTitle": "Détails de réservation",
+  "@bookingDetailsTitle": {
+    "description": "Titre de la boîte de dialogue des détails de réservation"
+  },
+
+  "profileTitle": "Profil",
+  "@profileTitle": {
+    "description": "Titre de l'écran profil"
+  },
+
+  "defaultUserName": "Utilisateur",
+  "@defaultUserName": {
+    "description": "Nom d'utilisateur par défaut"
+  },
+
+  "logoutButton": "Déconnexion",
+  "@logoutButton": {
+    "description": "Bouton de déconnexion"
+  },
+
+  "logoutError": "Erreur lors de la déconnexion: {error}",
+  "@logoutError": {
+    "description": "Message d'erreur lors de la déconnexion",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "Erreur de connexion"
+      }
+    }
+  },
+
+  "carbonFootprintTitle": "Impact carbone",
+  "@carbonFootprintTitle": {
+    "description": "Titre de la section impact carbone"
+  },
+
+  "trainEmissions": "Train",
+  "@trainEmissions": {
+    "description": "Label pour les émissions du train"
+  },
+
+  "carEmissions": "Voiture",
+  "@carEmissions": {
+    "description": "Label pour les émissions de la voiture"
+  },
+
+  "planeEmissions": "Avion",
+  "@planeEmissions": {
+    "description": "Label pour les émissions de l'avion"
+  },
+
+  "carbonSavings": "Économies CO₂",
+  "@carbonSavings": {
+    "description": "Label pour les économies de CO2"
+  },
+
+  "moderateImpact": "Impact carbone modéré pour ce trajet",
+  "@moderateImpact": {
+    "description": "Message pour impact carbone modéré"
+  },
+
+  "historyTitle": "Historique",
+  "@historyTitle": {
+    "description": "Titre de l'écran historique"
+  },
+
+  "noTripsInHistory": "Aucun trajet dans l'historique",
+  "@noTripsInHistory": {
+    "description": "Message quand il n'y a pas de trajets dans l'historique"
+  },
+
+  "pastTripsWillAppearHere": "Vos trajets passés apparaîtront ici",
+  "@pastTripsWillAppearHere": {
+    "description": "Message d'aide pour l'historique vide"
+  },
+
+  "statsTitle": "Statistiques",
+  "@statsTitle": {
+    "description": "Titre de l'écran statistiques"
+  },
+
+  "allTime": "TOUT",
+  "@allTime": {
+    "description": "Période toutes les années"
+  },
+
+  "trains": "TRAINS",
+  "@trains": {
+    "description": "Label pour le nombre de trains"
+  },
+
+  "distance": "DISTANCE",
+  "@distance": {
+    "description": "Label pour la distance"
+  },
+
+  "kilometers": "km",
+  "@kilometers": {
+    "description": "Unité kilomètres"
+  },
+
+  "time": "TEMPS",
+  "@time": {
+    "description": "Label pour le temps"
+  },
+
+  "stations": "GARES",
+  "@stations": {
+    "description": "Label pour le nombre de gares"
+  },
+
+  "companies": "COMPAGNIES",
+  "@companies": {
+    "description": "Label pour le nombre de compagnies"
+  },
+
+  "mostRiddenTrain": "Train le plus fréquenté",
+  "@mostRiddenTrain": {
+    "description": "Titre de la section train le plus fréquenté"
+  },
+
+  "trip": "trajet",
+  "@trip": {
+    "description": "Singulier de trajet"
+  },
+
+  "trips": "trajets",
+  "@trips": {
+    "description": "Pluriel de trajets"
+  },
+
+  "allTrains": "Tous les trains",
+  "@allTrains": {
+    "description": "Bouton pour voir tous les trains"
+  },
+
+  "quickInfo": "Informations rapides",
+  "@quickInfo": {
+    "description": "Titre de la section informations rapides"
+  },
+
+  "totalDistance": "Distance totale",
+  "@totalDistance": {
+    "description": "Titre pour la distance totale"
+  },
+
+  "totalDistanceDescription": "Cumul de tous vos trajets",
+  "@totalDistanceDescription": {
+    "description": "Description de la distance totale"
+  },
+
+  "timeInTrain": "Temps en train",
+  "@timeInTrain": {
+    "description": "Titre pour le temps passé en train"
+  },
+
+  "timeInTrainDescription": "Durée totale de vos voyages",
+  "@timeInTrainDescription": {
+    "description": "Description du temps en train"
+  },
+
+  "visitedStations": "Gares visitées",
+  "@visitedStations": {
+    "description": "Titre pour les gares visitées"
+  },
+
+  "visitedStationsDescription": "Nombre de gares uniques",
+  "@visitedStationsDescription": {
+    "description": "Description des gares visitées"
+  },
+
+  "stationsCount": "{count} gares",
+  "@stationsCount": {
+    "description": "Nombre de gares avec unité",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "15"
+      }
+    }
+  },
+
+  "personalRecord": "Record personnel",
+  "@personalRecord": {
+    "description": "Titre pour les records personnels"
+  },
+
+  "longestTrip": "Trajet le plus long",
+  "@longestTrip": {
+    "description": "Sous-titre pour le trajet le plus long"
+  },
+
+  "personalRecordDescription": "Découvrez vos records",
+  "@personalRecordDescription": {
+    "description": "Description des records personnels"
+  },
+
+  "stationsList": "Liste des gares visitées",
+  "@stationsList": {
+    "description": "Message pour la liste des gares"
+  },
+
+  "travelRecords": "Vos records de voyage",
+  "@travelRecords": {
+    "description": "Message pour les records de voyage"
+  },
+
+  "countdownTitle": "Compte à rebours",
+  "@countdownTitle": {
+    "description": "Titre de la section du compte à rebours avant le départ"
+  },
+  "countdownDays": "JOURS",
+  "@countdownDays": {
+    "description": "Label pour les jours dans le compte à rebours"
+  },
+  "countdownHours": "HEURES",
+  "@countdownHours": {
+    "description": "Label pour les heures dans le compte à rebours"
+  },
+  "countdownMinutes": "MINUTES",
+  "@countdownMinutes": {
+    "description": "Label pour les minutes dans le compte à rebours"
+  },
+  "ticketInfoTitle": "Infos billet",
+  "@ticketInfoTitle": {
+    "description": "Titre de la section des informations du billet"
+  },
+  "notProvided": "Non fourni",
+  "@notProvided": {
+    "description": "Texte affiché lorsqu'une information n'est pas disponible"
+  },
+  "deleteConfirmationTitle": "Confirmation de suppression",
+  "@deleteConfirmationTitle": {
+    "description": "Titre de la popup de confirmation de suppression"
+  },
+  "deleteConfirmationMessage": "Êtes-vous sûr de vouloir supprimer ce trajet ? Cette action est irréversible.",
+  "@deleteConfirmationMessage": {
+    "description": "Message de la popup de confirmation de suppression"
+  },
+  "deleteTripButton": "Supprimer le trajet",
+  "@deleteTripButton": {
+    "description": "Label du bouton pour supprimer un trajet"
+  }
+}

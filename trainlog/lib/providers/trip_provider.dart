@@ -1,17 +1,11 @@
 import 'package:flutter/foundation.dart';
-import 'package:home_widget/home_widget.dart';
 import 'package:trainlog/models/trip.dart';
 import '../services/firestore_service.dart';
-import 'dart:convert';
-import 'package:intl/intl.dart';
-
-// TODO: Replace with your App Group ID
-const String appGroupId = 'group.com.antoinewaes.raillog'; // Add from here
-const String iOSWidgetName = 'ProchainTrain';
-const String androidWidgetName = 'NewsWidget'; // To here.
+import '../services/widget_service.dart';
 
 class TripProvider with ChangeNotifier {
   final FirestoreService _firestoreService = FirestoreService();
+  final WidgetService _widgetService = WidgetService();
   List<Trip> _trips = [];
   List<Trip> _upcomingTrips = [];
   List<Trip> _pastTrips = [];
@@ -40,50 +34,16 @@ class TripProvider with ChangeNotifier {
       _pastTrips = trips
           .where((trip) => trip.departureTime.isBefore(DateTime.now()))
           .toList();
-      _saveTripsForWidget();
+      _updateWidget();
       notifyListeners();
     });
   }
 
-  Future<void> _saveTripsForWidget() async {
+  Future<void> _updateWidget() async {
     try {
-      final nextTrip = _upcomingTrips
-          .where((trip) => trip.departureTime.isAfter(DateTime.now()))
-          .toList()
-        ..sort((a, b) => a.departureTime.compareTo(b.departureTime));
-
-      if (nextTrip.isNotEmpty) {
-        // Sauvegarder le JSON des prochains trajets
-        final upcomingTripsJson = nextTrip
-            .map((trip) => {
-                  'id': trip.id,
-                  'departureTime': trip.departureTime.toIso8601String(),
-                  'departureStation': trip.departureStation,
-                  'arrivalStation': trip.arrivalStation,
-                  'trainNumber': trip.trainNumber,
-                  'trainType': trip.trainType,
-                  'distance': trip.distance,
-                  'price': trip.price,
-                })
-            .toList();
-
-        final jsonString = jsonEncode(upcomingTripsJson);
-        await HomeWidget.saveWidgetData('nextTrips', jsonString);
-        print('JSON sauvegardé: $jsonString');
-      } else {
-        // Si aucun trajet, envoyer des valeurs par défaut
-
-        await HomeWidget.saveWidgetData('nextTrips', '[]');
-      }
-
-      await HomeWidget.updateWidget(
-        iOSName: iOSWidgetName,
-        androidName: androidWidgetName,
-      );
-
-      print('Widget mis à jour avec le prochain trajet');
+      await _widgetService.updateWidgetWithTrips(_upcomingTrips);
     } catch (e) {
-      print('Erreur lors de la mise à jour du widget: $e');
+      debugPrint('Erreur lors de la mise à jour du widget: $e');
     }
   }
 
@@ -140,7 +100,7 @@ class TripProvider with ChangeNotifier {
       // ...
 
       // Sauvegarder les voyages pour le widget
-      await _saveTripsForWidget();
+      await _updateWidget();
     } finally {
       _isLoading = false;
       notifyListeners();

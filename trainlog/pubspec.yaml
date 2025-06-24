@@ -60,7 +60,10 @@ dependencies:
   google_mlkit_text_recognition: 
   sign_in_with_apple:
   marquee: ^2.3.0
-  flip_board:
+  flip_board: ^1.0.0
+  flutter_localizations:
+    sdk: flutter
+  adaptive_theme: ^3.7.0
   
 dev_dependencies:
   flutter_test:
@@ -80,11 +83,13 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
+  uses-material-design: true
+  generate: true
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.
-  uses-material-design: true
+  # uses-material-design: true
 
   # To add assets to your application, add an assets section, like this:
   assets:

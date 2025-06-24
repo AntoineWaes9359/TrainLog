@@ -1,0 +1,479 @@
+{
+  "@@locale": "en",
+  "appTitle": "TrainLog",
+  "@appTitle": {
+    "description": "The application title"
+  },
+  
+  "navigationTrips": "Trips",
+  "@navigationTrips": {
+    "description": "Navigation label for trips"
+  },
+  
+  "navigationHistory": "History",
+  "@navigationHistory": {
+    "description": "Navigation label for history"
+  },
+  
+  "navigationStats": "Stats",
+  "@navigationStats": {
+    "description": "Navigation label for statistics"
+  },
+  
+  "navigationProfile": "Profile",
+  "@navigationProfile": {
+    "description": "Navigation label for profile"
+  },
+
+  "upcomingTitle": "Upcoming",
+  "@upcomingTitle": {
+    "description": "Title of the upcoming trips screen"
+  },
+
+  "nextTripTitle": "Next trip",
+  "@nextTripTitle": {
+    "description": "Title of the next trip card"
+  },
+
+  "timeUnitHours": "HOURS",
+  "@timeUnitHours": {
+    "description": "Time unit for hours"
+  },
+
+  "timeUnitDays": "DAYS",
+  "@timeUnitDays": {
+    "description": "Time unit for days"
+  },
+
+  "copiedToClipboard": "Copied to clipboard",
+  "@copiedToClipboard": {
+    "description": "Copy confirmation message"
+  },
+
+  "editSeatTitle": "Edit seat",
+  "@editSeatTitle": {
+    "description": "Title of the seat editing dialog"
+  },
+
+  "seatNumberLabel": "Seat number",
+  "@seatNumberLabel": {
+    "description": "Label for seat number field"
+  },
+
+  "seatNumberHint": "Ex: 12A",
+  "@seatNumberHint": {
+    "description": "Help text for seat number"
+  },
+
+  "cancelButton": "Cancel",
+  "@cancelButton": {
+    "description": "Cancel button"
+  },
+
+  "saveButton": "Save",
+  "@saveButton": {
+    "description": "Save button"
+  },
+
+  "deleteTripTitle": "Delete trip",
+  "@deleteTripTitle": {
+    "description": "Title of the delete dialog"
+  },
+
+  "deleteTripConfirmation": "Are you sure you want to delete this trip?",
+  "@deleteTripConfirmation": {
+    "description": "Delete confirmation message"
+  },
+
+  "deleteButton": "Delete",
+  "@deleteButton": {
+    "description": "Delete button"
+  },
+
+  "departureLabel": "Departure",
+  "@departureLabel": {
+    "description": "Label for departure"
+  },
+
+  "arrivalLabel": "Arrival",
+  "@arrivalLabel": {
+    "description": "Label for arrival"
+  },
+
+  "distanceLabel": "Distance",
+  "@distanceLabel": {
+    "description": "Label for distance"
+  },
+
+  "durationLabel": "Duration",
+  "@durationLabel": {
+    "description": "Label for duration"
+  },
+
+  "trainNumberLabel": "Train number",
+  "@trainNumberLabel": {
+    "description": "Label for train number"
+  },
+
+  "ticketNumberLabel": "Ticket number",
+  "@ticketNumberLabel": {
+    "description": "Label for ticket number"
+  },
+
+  "seatLabel": "Seat",
+  "@seatLabel": {
+    "description": "Label for seat"
+  },
+
+  "dossierLabel": "File",
+  "@dossierLabel": {
+    "description": "Label for file"
+  },
+
+  "copyButton": "COPY",
+  "@copyButton": {
+    "description": "Copy button"
+  },
+
+  "pasteButton": "PASTE",
+  "@pasteButton": {
+    "description": "Paste button"
+  },
+
+  "tapToEdit": "Tap to Edit",
+  "@tapToEdit": {
+    "description": "Help text for editing"
+  },
+
+  "classLabel": "Class",
+  "@classLabel": {
+    "description": "Label for class"
+  },
+
+  "carLabel": "Car",
+  "@carLabel": {
+    "description": "Label for car"
+  },
+
+  "informationTitle": "Information",
+  "@informationTitle": {
+    "description": "Title of the information section"
+  },
+
+  "trainInfoLabel": "Train",
+  "@trainInfoLabel": {
+    "description": "Label for train information"
+  },
+
+  "dateInfoLabel": "Date",
+  "@dateInfoLabel": {
+    "description": "Label for date"
+  },
+
+  "durationInfoLabel": "Duration",
+  "@durationInfoLabel": {
+    "description": "Label for duration"
+  },
+
+  "distanceInfoLabel": "Distance",
+  "@distanceInfoLabel": {
+    "description": "Label for distance"
+  },
+
+  "myHistoryTitle": "My history on this route",
+  "@myHistoryTitle": {
+    "description": "Title of the history section"
+  },
+
+  "tripsLabel": "Trips",
+  "@tripsLabel": {
+    "description": "Label for number of trips"
+  },
+
+  "travelTimeLabel": "Travel time",
+  "@travelTimeLabel": {
+    "description": "Label for travel time"
+  },
+
+  "dossierNumberHint": "File number",
+  "@dossierNumberHint": {
+    "description": "Help text for file number"
+  },
+
+  "seatNumberEditHint": "Seat number (ex: 12A)",
+  "@seatNumberEditHint": {
+    "description": "Help text for seat number editing"
+  },
+
+  "secondClass": "Second",
+  "@secondClass": {
+    "description": "Second class"
+  },
+
+  "firstClass": "First",
+  "@firstClass": {
+    "description": "First class"
+  },
+
+  "businessClass": "Business",
+  "@businessClass": {
+    "description": "Business class"
+  },
+
+  "saveChangesButton": "Save",
+  "@saveChangesButton": {
+    "description": "Save changes button"
+  },
+
+  "bookingDetailsTitle": "Booking details",
+  "@bookingDetailsTitle": {
+    "description": "Title of the booking details dialog"
+  },
+
+  "profileTitle": "Profile",
+  "@profileTitle": {
+    "description": "Title of the profile screen"
+  },
+
+  "defaultUserName": "User",
+  "@defaultUserName": {
+    "description": "Default username"
+  },
+
+  "logoutButton": "Logout",
+  "@logoutButton": {
+    "description": "Logout button"
+  },
+
+  "logoutError": "Error during logout: {error}",
+  "@logoutError": {
+    "description": "Error message during logout",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "Connection error"
+      }
+    }
+  },
+
+  "carbonFootprintTitle": "Carbon footprint",
+  "@carbonFootprintTitle": {
+    "description": "Title of the carbon footprint section"
+  },
+
+  "trainEmissions": "Train",
+  "@trainEmissions": {
+    "description": "Label for train emissions"
+  },
+
+  "carEmissions": "Car",
+  "@carEmissions": {
+    "description": "Label for car emissions"
+  },
+
+  "planeEmissions": "Plane",
+  "@planeEmissions": {
+    "description": "Label for plane emissions"
+  },
+
+  "carbonSavings": "CO₂ savings",
+  "@carbonSavings": {
+    "description": "Label for CO2 savings"
+  },
+
+  "moderateImpact": "Moderate carbon impact for this trip",
+  "@moderateImpact": {
+    "description": "Message for moderate carbon impact"
+  },
+
+  "historyTitle": "History",
+  "@historyTitle": {
+    "description": "History screen title"
+  },
+
+  "noTripsInHistory": "No trips in history",
+  "@noTripsInHistory": {
+    "description": "Message when there are no trips in history"
+  },
+
+  "pastTripsWillAppearHere": "Your past trips will appear here",
+  "@pastTripsWillAppearHere": {
+    "description": "Help message for empty history"
+  },
+
+  "statsTitle": "Statistics",
+  "@statsTitle": {
+    "description": "Statistics screen title"
+  },
+
+  "allTime": "ALL",
+  "@allTime": {
+    "description": "All time period"
+  },
+
+  "trains": "TRAINS",
+  "@trains": {
+    "description": "Label for number of trains"
+  },
+
+  "distance": "DISTANCE",
+  "@distance": {
+    "description": "Label for distance"
+  },
+
+  "kilometers": "km",
+  "@kilometers": {
+    "description": "Kilometers unit"
+  },
+
+  "time": "TIME",
+  "@time": {
+    "description": "Label for time"
+  },
+
+  "stations": "STATIONS",
+  "@stations": {
+    "description": "Label for number of stations"
+  },
+
+  "companies": "COMPANIES",
+  "@companies": {
+    "description": "Label for number of companies"
+  },
+
+  "mostRiddenTrain": "Most ridden train",
+  "@mostRiddenTrain": {
+    "description": "Title for most ridden train section"
+  },
+
+  "trip": "trip",
+  "@trip": {
+    "description": "Singular of trip"
+  },
+
+  "trips": "trips",
+  "@trips": {
+    "description": "Plural of trips"
+  },
+
+  "allTrains": "All trains",
+  "@allTrains": {
+    "description": "Button to see all trains"
+  },
+
+  "quickInfo": "Quick information",
+  "@quickInfo": {
+    "description": "Title for quick information section"
+  },
+
+  "totalDistance": "Total distance",
+  "@totalDistance": {
+    "description": "Title for total distance"
+  },
+
+  "totalDistanceDescription": "Sum of all your trips",
+  "@totalDistanceDescription": {
+    "description": "Description of total distance"
+  },
+
+  "timeInTrain": "Time in train",
+  "@timeInTrain": {
+    "description": "Title for time spent in train"
+  },
+
+  "timeInTrainDescription": "Total duration of your journeys",
+  "@timeInTrainDescription": {
+    "description": "Description of time in train"
+  },
+
+  "visitedStations": "Visited stations",
+  "@visitedStations": {
+    "description": "Title for visited stations"
+  },
+
+  "visitedStationsDescription": "Number of unique stations",
+  "@visitedStationsDescription": {
+    "description": "Description of visited stations"
+  },
+
+  "stationsCount": "{count} stations",
+  "@stationsCount": {
+    "description": "Number of stations with unit",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "15"
+      }
+    }
+  },
+
+  "personalRecord": "Personal record",
+  "@personalRecord": {
+    "description": "Title for personal records"
+  },
+
+  "longestTrip": "Longest trip",
+  "@longestTrip": {
+    "description": "Subtitle for longest trip"
+  },
+
+  "personalRecordDescription": "Discover your records",
+  "@personalRecordDescription": {
+    "description": "Description of personal records"
+  },
+
+  "stationsList": "List of visited stations",
+  "@stationsList": {
+    "description": "Message for stations list"
+  },
+
+  "travelRecords": "Your travel records",
+  "@travelRecords": {
+    "description": "Message for travel records"
+  },
+
+  "countdownTitle": "Countdown",
+  "@countdownTitle": {
+    "description": "Title for the countdown section before departure"
+  },
+
+  "countdownDays": "DAYS",
+  "@countdownDays": {
+    "description": "Label for days in the countdown"
+  },
+
+  "countdownHours": "HOURS",
+  "@countdownHours": {
+    "description": "Label for hours in the countdown"
+  },
+
+  "countdownMinutes": "MINUTES",
+  "@countdownMinutes": {
+    "description": "Label for minutes in the countdown"
+  },
+
+  "ticketInfoTitle": "Ticket Info",
+  "@ticketInfoTitle": {
+    "description": "Title for the ticket information section"
+  },
+
+  "notProvided": "Not provided",
+  "@notProvided": {
+    "description": "Text displayed when information is not available"
+  },
+
+  "deleteConfirmationTitle": "Delete Confirmation",
+  "@deleteConfirmationTitle": {
+    "description": "Title of the delete confirmation dialog"
+  },
+
+  "deleteConfirmationMessage": "Are you sure you want to delete this trip? This action cannot be undone.",
+  "@deleteConfirmationMessage": {
+    "description": "Message of the delete confirmation dialog"
+  },
+
+  "deleteTripButton": "Delete Trip",
+  "@deleteTripButton": {
+    "description": "Label for the delete trip button"
+  }
+} 

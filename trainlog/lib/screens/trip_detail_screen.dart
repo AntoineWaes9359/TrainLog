@@ -1,19 +1,26 @@
 import 'package:flip_board/flip_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/rendering.dart';
+import 'dart:ui';
 import 'package:intl/intl.dart';
-import 'package:trainlog/theme/colors.dart';
-import '../models/trip.dart';
-import '../providers/trip_provider.dart';
+import 'dart:math';
+import 'package:trainlog/models/trip.dart';
+import 'package:trainlog/providers/trip_provider_improved.dart';
 import 'package:provider/provider.dart';
 import 'package:apple_maps_flutter/apple_maps_flutter.dart';
+import 'package:trainlog/widgets/common/custom_flip_board.dart';
 import 'dart:io' show Platform;
-import 'dart:math';
 import 'dart:ui' as ui;
-import '../widgets/train_logo.dart';
+import 'package:trainlog/widgets/train_logo.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
-import 'package:flip_board/flip_board.dart';
+import 'package:trainlog/theme/typography.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:trainlog/widgets/carbon_footprint_card.dart';
+import 'package:trainlog/services/sncf_realtime_service.dart';
+import 'package:trainlog/widgets/common/info_card.dart';
+import 'package:trainlog/widgets/disruption_details_modal.dart';
 
 class TripDetailScreen extends StatefulWidget {
   final Trip trip;
@@ -31,6 +38,12 @@ class _TripDetailScreenState extends State<TripDetailScreen>
   late String _seatNumber;
   late AnimationController _trainAnimationController;
   late Animation<double> _trainAnimation;
+  late List<Color> _flipEndColors;
+
+  // Variables pour les informations en temps réel
+  Map<String, dynamic>? _realtimeInfo;
+  bool _isLoadingRealtime = false;
+  String? _realtimeError;
 
   @override
   void initState() {
@@ -46,7 +59,7 @@ class _TripDetailScreenState extends State<TripDetailScreen>
 
     _trainAnimation = Tween<double>(
       begin: 0.0,
-      end: 0.8,
+      end: 1.0,
     ).animate(CurvedAnimation(
       parent: _trainAnimationController,
       curve: Curves.easeInOut,
@@ -54,6 +67,19 @@ class _TripDetailScreenState extends State<TripDetailScreen>
 
     // Démarrer l'animation avec répétition
     _trainAnimationController.repeat(reverse: true);
+
+    // Récupérer les informations en temps réel pour les trajets futurs
+    _fetchRealtimeInfo();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Mettre à jour les couleurs du flip board selon le thème
+    _flipEndColors = [
+      Theme.of(context).colorScheme.background,
+      Theme.of(context).colorScheme.primary.withOpacity(0.1)
+    ];
   }
 
   @override
@@ -62,13 +88,146 @@ class _TripDetailScreenState extends State<TripDetailScreen>
     super.dispose();
   }
 
+  /// Récupère les informations en temps réel pour le trajet
+  Future<void> _fetchRealtimeInfo() async {
+    // Afficher pour les trajets futurs ET jusqu'à 6h après le départ prévu
+    final now = DateTime.now();
+    final sixHoursAfterDeparture =
+        trip.departureTime.add(const Duration(hours: 6));
+
+    if (now.isAfter(sixHoursAfterDeparture)) {
+      return;
+    }
+
+    setState(() {
+      _isLoadingRealtime = true;
+      _realtimeError = null;
+    });
+
+    try {
+      // Utiliser l'API réelle
+      final info = await SncfRealtimeService.getRealtimeInfo(
+        trip.trainNumber,
+        trip.departureTime,
+        trip.trainType,
+      );
+
+      if (mounted) {
+        setState(() {
+          _realtimeInfo = info;
+          _isLoadingRealtime = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingRealtime = false;
+          _realtimeError =
+              'Impossible de récupérer les informations en temps réel';
+        });
+      }
+    }
+  }
+
+  /// Rafraîchit les informations en temps réel
+  Future<void> _refreshRealtimeInfo() async {
+    await _fetchRealtimeInfo();
+  }
+
+  /// Obtient le titre de la perturbation
+  String _getDisruptionTitle(String disruptionType) {
+    switch (disruptionType) {
+      case 'blocking':
+        return 'Trajet bloqué';
+      case 'delayed':
+        return 'Retard signalé';
+      case 'reduced':
+        return 'Service réduit';
+      case 'info':
+      default:
+        return 'Information';
+    }
+  }
+
+  /// Obtient la description de la perturbation
+  String _getDisruptionDescription(Map<String, dynamic> disruptionInfo) {
+    final delayMinutes = disruptionInfo['delayMinutes'] as int?;
+    final cause = disruptionInfo['cause'] as String?;
+    final hasDeletedStops = disruptionInfo['hasDeletedStops'] as bool?;
+    final isFullyCancelled = disruptionInfo['isFullyCancelled'] as bool?;
+
+    List<String> parts = [];
+
+    if (isFullyCancelled == true) {
+      parts.add('Train complètement annulé');
+    } else if (hasDeletedStops == true) {
+      parts.add('Certains arrêts supprimés');
+    }
+
+    if (delayMinutes != null && delayMinutes > 0) {
+      parts.add('Retard de $delayMinutes minutes');
+    }
+
+    if (cause != null && cause.isNotEmpty) {
+      parts.add('Cause: $cause');
+    }
+
+    return parts.join(' • ');
+  }
+
+  /// Obtient l'icône de la perturbation
+  IconData _getDisruptionIcon(String disruptionType) {
+    switch (disruptionType) {
+      case 'blocking':
+        return Icons.block;
+      case 'delayed':
+        return Icons.schedule;
+      case 'reduced':
+        return Icons.reduce_capacity;
+      case 'info':
+      default:
+        return Icons.info_outline;
+    }
+  }
+
+  /// Obtient la couleur de l'icône
+  Color _getDisruptionColor(String disruptionType) {
+    switch (disruptionType) {
+      case 'blocking':
+        return Colors.red;
+      case 'delayed':
+        return Colors.orange;
+      case 'reduced':
+        return Colors.amber;
+      case 'info':
+      default:
+        return Colors.blue;
+    }
+  }
+
+  /// Obtient la couleur de fond
+  Color _getDisruptionBackgroundColor(String disruptionType) {
+    switch (disruptionType) {
+      case 'blocking':
+        return Colors.red.withOpacity(0.1);
+      case 'delayed':
+        return Colors.orange.withOpacity(0.1);
+      case 'reduced':
+        return Colors.amber.withOpacity(0.1);
+      case 'info':
+      default:
+        return Colors.blue.withOpacity(0.1);
+    }
+  }
+
   Future<void> _copyToClipboard(String text) async {
     await Clipboard.setData(ClipboardData(text: text));
     if (!mounted) return;
+    final l10n = AppLocalizations.of(context)!;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Copié dans le presse-papier'),
-        duration: Duration(seconds: 2),
+      SnackBar(
+        content: Text(l10n.copiedToClipboard),
+        duration: const Duration(seconds: 2),
       ),
     );
   }
@@ -86,28 +245,29 @@ class _TripDetailScreenState extends State<TripDetailScreen>
   }
 
   Future<void> _editSeat() async {
+    final l10n = AppLocalizations.of(context)!;
     final result = await showDialog<String>(
       context: context,
       builder: (BuildContext context) {
         String tempSeatNumber = _seatNumber;
         return AlertDialog(
-          title: const Text('Modifier le siège'),
+          title: Text(l10n.editSeatTitle),
           content: TextField(
             controller: TextEditingController(text: tempSeatNumber),
-            decoration: const InputDecoration(
-              labelText: 'Numéro de siège',
-              hintText: 'Ex: 12A',
+            decoration: InputDecoration(
+              labelText: l10n.seatNumberLabel,
+              hintText: l10n.seatNumberHint,
             ),
             onChanged: (value) => tempSeatNumber = value,
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Annuler'),
+              child: Text(l10n.cancelButton),
             ),
             TextButton(
               onPressed: () => Navigator.pop(context, tempSeatNumber),
-              child: const Text('Enregistrer'),
+              child: Text(l10n.saveButton),
             ),
           ],
         );
@@ -126,71 +286,60 @@ class _TripDetailScreenState extends State<TripDetailScreen>
 
   int _getDaysUntil(DateTime date) {
     final now = DateTime.now();
-    final difference = date.difference(now);
-    return difference.inDays;
+    return date.isBefore(now) ? 0 : date.difference(now).inDays;
   }
 
   Future<BitmapDescriptor> _createCustomMarkerIcon(bool isDeparture) async {
     final ui.PictureRecorder pictureRecorder = ui.PictureRecorder();
     final Canvas canvas = Canvas(pictureRecorder);
-    const double size = 80;
+    const double size = 100;
 
-    // Couleur principale
-    final Color mainColor =
-        isDeparture ? AppColors.primary : AppColors.secondary;
+    final Color mainColor = isDeparture
+        ? Theme.of(context).colorScheme.primary
+        : Theme.of(context).colorScheme.secondary;
 
-    // Ombre portée
     final Paint shadowPaint = Paint()
-      ..color = Colors.black.withOpacity(0.18)
+      ..color = Theme.of(context).colorScheme.onSurface.withOpacity(0.3)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
     canvas.drawCircle(
-        const Offset(size / 2, size / 2), size / 2.2, shadowPaint);
+        const Offset(size / 2, size / 2 + 4), size / 2.5, shadowPaint);
 
-    // Cercle principal
     final Paint circlePaint = Paint()
-      ..color = mainColor
-      ..style = PaintingStyle.fill;
+      ..color = Theme.of(context).colorScheme.background;
     canvas.drawCircle(
-        const Offset(size / 2, size / 2), size / 2.5, circlePaint);
+        const Offset(size / 2, size / 2), size / 2.2, circlePaint);
 
-    // Contour blanc épais
     final Paint borderPaint = Paint()
-      ..color = Colors.white
+      ..color = mainColor
       ..style = PaintingStyle.stroke
       ..strokeWidth = 6;
     canvas.drawCircle(
-        const Offset(size / 2, size / 2), size / 2.5, borderPaint);
+        const Offset(size / 2, size / 2), size / 2.2, borderPaint);
 
-    // Icône centrale
-    final IconData icon = isDeparture ? Icons.train : Icons.flag;
+    final IconData icon =
+        isDeparture ? Icons.train_outlined : Icons.flag_outlined;
     final TextPainter textPainter =
-        TextPainter(textDirection: ui.TextDirection.ltr);
-    textPainter.text = TextSpan(
-      text: String.fromCharCode(icon.codePoint),
-      style: TextStyle(
-        fontSize: 36,
-        fontFamily: icon.fontFamily,
-        color: Colors.white,
-        package: icon.fontPackage,
-      ),
-    );
-    textPainter.layout();
+        TextPainter(textDirection: ui.TextDirection.ltr)
+          ..text = TextSpan(
+            text: String.fromCharCode(icon.codePoint),
+            style: TextStyle(
+              fontSize: 40,
+              fontFamily: icon.fontFamily,
+              color: mainColor,
+              package: icon.fontPackage,
+            ),
+          )
+          ..layout();
     textPainter.paint(
       canvas,
-      Offset(
-        (size - textPainter.width) / 2,
-        (size - textPainter.height) / 2,
-      ),
+      Offset((size - textPainter.width) / 2, (size - textPainter.height) / 2),
     );
 
-    final image = await pictureRecorder.endRecording().toImage(
-          size.toInt(),
-          size.toInt(),
-        );
+    final image = await pictureRecorder
+        .endRecording()
+        .toImage(size.toInt(), size.toInt());
     final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-    final Uint8List imageData = byteData!.buffer.asUint8List();
-
-    return BitmapDescriptor.fromBytes(imageData);
+    return BitmapDescriptor.fromBytes(byteData!.buffer.asUint8List());
   }
 
   Widget _buildMap() {
@@ -210,6 +359,7 @@ class _TripDetailScreenState extends State<TripDetailScreen>
 
         final departureIcon = snapshot.data![0];
         final arrivalIcon = snapshot.data![1];
+        final l10n = AppLocalizations.of(context)!;
 
         // Créer un set de marqueurs pour le départ et l'arrivée
         final Set<Annotation> markers = {
@@ -223,7 +373,7 @@ class _TripDetailScreenState extends State<TripDetailScreen>
             infoWindow: InfoWindow(
               title: trip.departureStation,
               snippet:
-                  'Départ ${DateFormat('HH:mm').format(trip.departureTime)}',
+                  '${l10n.departureLabel} ${DateFormat('HH:mm').format(trip.departureTime)}',
               anchor: const Offset(0.5, 0.0),
             ),
             onTap: () {},
@@ -239,7 +389,7 @@ class _TripDetailScreenState extends State<TripDetailScreen>
             infoWindow: InfoWindow(
               title: trip.arrivalStation,
               snippet:
-                  'Arrivée ${DateFormat('HH:mm').format(trip.arrivalTime)}',
+                  '${l10n.arrivalLabel} ${DateFormat('HH:mm').format(trip.arrivalTime)}',
               anchor: const Offset(0.5, 0.0),
             ),
             onTap: () {},
@@ -262,7 +412,7 @@ class _TripDetailScreenState extends State<TripDetailScreen>
             Polyline(
               polylineId: PolylineId('route_glow'),
               points: boundPoints,
-              color: AppColors.primary.withOpacity(0.18),
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.18),
               width: 16,
               polylineCap: Cap.roundCap,
             ),
@@ -272,7 +422,7 @@ class _TripDetailScreenState extends State<TripDetailScreen>
             Polyline(
               polylineId: PolylineId('route'),
               points: boundPoints,
-              color: AppColors.secondary,
+              color: Theme.of(context).colorScheme.secondary,
               width: 8,
               polylineCap: Cap.roundCap,
             ),
@@ -287,7 +437,7 @@ class _TripDetailScreenState extends State<TripDetailScreen>
             Polyline(
               polylineId: PolylineId('route_glow'),
               points: polylinePoints,
-              color: AppColors.primary.withOpacity(0.18),
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.18),
               width: 16,
               polylineCap: Cap.roundCap,
             ),
@@ -297,7 +447,7 @@ class _TripDetailScreenState extends State<TripDetailScreen>
             Polyline(
               polylineId: PolylineId('route'),
               points: polylinePoints,
-              color: AppColors.secondary,
+              color: Theme.of(context).colorScheme.secondary,
               width: 8,
               polylineCap: Cap.roundCap,
             ),
@@ -307,26 +457,36 @@ class _TripDetailScreenState extends State<TripDetailScreen>
         }
 
         // Calculer les limites de la carte pour inclure les points nécessaires
+        final minLat = boundPoints.map((p) => p.latitude).reduce(min);
+        final maxLat = boundPoints.map((p) => p.latitude).reduce(max);
+        final minLng = boundPoints.map((p) => p.longitude).reduce(min);
+        final maxLng = boundPoints.map((p) => p.longitude).reduce(max);
+
+        // Ajouter un petit padding aux bounds pour éviter que les marqueurs soient collés aux bords
+        final latPadding = (maxLat - minLat) * 0.1;
+        final lngPadding = (maxLng - minLng) * 0.1;
+
         final bounds = LatLngBounds(
           southwest: LatLng(
-            boundPoints.map((p) => p.latitude).reduce(min),
-            boundPoints.map((p) => p.longitude).reduce(min),
+            minLat - latPadding,
+            minLng - lngPadding,
           ),
           northeast: LatLng(
-            boundPoints.map((p) => p.latitude).reduce(max),
-            boundPoints.map((p) => p.longitude).reduce(max),
+            maxLat + latPadding,
+            maxLng + lngPadding,
           ),
         );
+
+        // Calculer le centre du trajet
+        final centerLat = (minLat + maxLat) / 2;
+        final centerLng = (minLng + maxLng) / 2;
 
         return SizedBox(
           height: 300,
           child: AppleMap(
             initialCameraPosition: CameraPosition(
-              target: LatLng(
-                trip.departureCityGeo.latitude,
-                trip.departureCityGeo.longitude,
-              ),
-              zoom: 6,
+              target: LatLng(centerLat, centerLng),
+              zoom: 6, // Zoom par défaut
             ),
             annotations: markers,
             polylines: polylines,
@@ -342,12 +502,15 @@ class _TripDetailScreenState extends State<TripDetailScreen>
               ),
             },
             onMapCreated: (AppleMapController controller) {
-              controller.moveCamera(
-                CameraUpdate.newLatLngBounds(
-                  bounds,
-                  50.0, // padding en pixels
-                ),
-              );
+              // Attendre un peu avant de déplacer la caméra pour s'assurer que la carte est prête
+              Future.delayed(const Duration(milliseconds: 100), () {
+                controller.moveCamera(
+                  CameraUpdate.newLatLngBounds(
+                    bounds,
+                    50.0, // padding en pixels
+                  ),
+                );
+              });
             },
           ),
         );
@@ -357,1299 +520,840 @@ class _TripDetailScreenState extends State<TripDetailScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<TripProvider>(
-      builder: (context, tripProvider, child) {
-        final currentTrip =
-            tripProvider.trips.firstWhere((t) => t.id == widget.trip.id);
-        final daysUntil = _getDaysUntil(currentTrip.departureTime);
-        final isUpcoming = daysUntil >= 0;
+    final l10n = AppLocalizations.of(context)!;
+    final now = DateTime.now();
+    final sixHoursAfterDeparture =
+        trip.departureTime.add(const Duration(hours: 6));
+    final shouldShowRealtime = now.isBefore(sixHoursAfterDeparture);
 
-        return Scaffold(
-          backgroundColor: AppColors.white,
-          body: CustomScrollView(
-            slivers: [
-              SliverAppBar(
-                expandedHeight: 300.0,
-                floating: false,
-                pinned: true,
-                backgroundColor: Colors.transparent,
-                iconTheme: const IconThemeData(color: Color(0xFF284B63)),
-                flexibleSpace: FlexibleSpaceBar(
-                  background: _buildMap(),
-                ),
-                actions: [],
-              ),
-              SliverToBoxAdapter(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // En-tête avec logo et informations du trajet
-                    Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Row(
-                        children: [
-                          TrainLogo(
-                            trainType: currentTrip.trainType,
-                            size: 30,
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  currentTrip.trainType,
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.primary,
-                                  ),
-                                ),
-                                Text(
-                                  'Train ${currentTrip.trainNumber}',
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    color: AppColors.secondary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          if (isUpcoming)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.secondary,
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              child: Text(
-                                '$daysUntil jours',
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                  color: AppColors.white,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                    const Divider(
-                      height: 1,
-                      color: AppColors.light,
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Gare de départ
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        children: [
-                          FlipFraseBoard(
-                            flipType: FlipType.spinFlip,
-                            axis: Axis.vertical,
-                            startLetter: 'A',
-                            endFrase:
-                                '${DateFormat('HH').format(currentTrip.departureTime)}H${DateFormat('mm').format(currentTrip.departureTime)}',
-                            fontSize: 12,
-                            flipLetterHeight: 18,
-                            flipLetterWidth: 15,
-                            hingeWidth: 0.9,
-                            hingeColor: Color(0xFF3C6E71),
-                            borderColor: Color(0xFF284B63),
-                            endColors: [Color(0xFF284B63)],
-                            letterSpacing: 1,
-                            minFlipDelay: 10,
-                            maxFlipDelay: 100,
-                          ),
-                          const SizedBox(width: 20),
-                          Expanded(
-                            child: Text(
-                              currentTrip.departureStation,
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w500,
-                                color: Color(0xFF3C6E71),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 5),
-                    Center(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          children: [
-                            Text(
-                              currentTrip.formattedDuration,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                                color: Color(0xFF353535),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              '• ${currentTrip.distance.toStringAsFixed(0)} km',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                                color: Color(0xFF353535),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: CustomPaint(
-                                painter: DottedLinePainter(),
-                                size: const Size(double.infinity, 1),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 5),
-
-                    // Gare d'arrivée
-                    Center(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          children: [
-                            FlipFraseBoard(
-                              flipType: FlipType.spinFlip,
-                              axis: Axis.vertical,
-                              startLetter: 'A',
-                              endFrase:
-                                  '${DateFormat('HH').format(currentTrip.arrivalTime)}H${DateFormat('mm').format(currentTrip.arrivalTime)}',
-                              fontSize: 12,
-                              flipLetterHeight: 18,
-                              flipLetterWidth: 15,
-                              hingeWidth: 0.9,
-                              hingeColor: Color(0xFF3C6E71),
-                              borderColor: Color(0xFF284B63),
-                              endColors: [Color(0xFF284B63)],
-                              letterSpacing: 1,
-                              minFlipDelay: 10,
-                              maxFlipDelay: 100,
-                            ),
-                            const SizedBox(width: 20),
-                            Expanded(
-                              child: Text(
-                                currentTrip.arrivalStation,
-                                style: const TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w500,
-                                  color: Color(0xFF3C6E71),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 15),
-                    // Cartes de réservation et siège
-                    const Divider(
-                      height: 1,
-                      color: AppColors.light,
-                    ),
-                    const SizedBox(height: 16),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      child: Column(
-                        children: [
-                          // Première rangée : Dossier et Siège
-                          Row(
-                            children: [
-                              // Dossier
-                              Expanded(
-                                child: Container(
-                                  height: 100,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                        color: const Color(0xFFE5E5E5)),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.05),
-                                        blurRadius: 10,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          Padding(
-                                            padding: const EdgeInsets.fromLTRB(
-                                                12, 12, 0, 12),
-                                            child: const Icon(
-                                              Icons.folder,
-                                              size: 24,
-                                              color: Color(0xFF284B63),
-                                            ),
-                                          ),
-                                          const SizedBox(width: 6),
-                                          const Text(
-                                            'Dossier',
-                                            style: TextStyle(
-                                              fontSize: 14,
-                                              color: Color(0xFF3C6E71),
-                                            ),
-                                          ),
-                                          const SizedBox(width: 6),
-                                          SizedBox(
-                                            width: 60,
-                                            height: 30,
-                                            child: TextButton(
-                                              onPressed: () async {
-                                                if (_ticketNumber.isNotEmpty) {
-                                                  await _copyToClipboard(
-                                                      _ticketNumber);
-                                                } else {
-                                                  await _pasteFromClipboard();
-                                                }
-                                              },
-                                              style: TextButton.styleFrom(
-                                                backgroundColor:
-                                                    const Color(0xFFF5F5F5),
-                                                shape: RoundedRectangleBorder(
-                                                  borderRadius:
-                                                      BorderRadius.circular(8),
-                                                ),
-                                              ),
-                                              child: Text(
-                                                _ticketNumber.isNotEmpty
-                                                    ? 'COPIER'
-                                                    : 'COLLER',
-                                                style: const TextStyle(
-                                                  color: Color(0xFF284B63),
-                                                  fontSize: 9,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const Spacer(),
-                                      Padding(
-                                        padding: const EdgeInsets.all(12.0),
-                                        child: Text(
-                                          _ticketNumber.isNotEmpty
-                                              ? _ticketNumber
-                                              : 'N/A',
-                                          style: TextStyle(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.w600,
-                                            color: _ticketNumber.isNotEmpty
-                                                ? const Color(0xFF284B63)
-                                                : const Color(0xFF3C6E71),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              // Siège
-                              Expanded(
-                                child: Container(
-                                  height: 100,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                        color: const Color(0xFFE5E5E5)),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.05),
-                                        blurRadius: 10,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Material(
-                                    color: Colors.transparent,
-                                    child: InkWell(
-                                      onTap: () => _editBookingDetails('seat'),
-                                      borderRadius: BorderRadius.circular(12),
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(12),
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Row(
-                                              children: [
-                                                const Icon(
-                                                  Icons.chair,
-                                                  size: 24,
-                                                  color: Color(0xFF284B63),
-                                                ),
-                                                const SizedBox(width: 8),
-                                                const Text(
-                                                  'Siège',
-                                                  style: TextStyle(
-                                                    fontSize: 14,
-                                                    color: Color(0xFF3C6E71),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                            const Spacer(),
-                                            Text(
-                                              currentTrip.seatNumber != null &&
-                                                      currentTrip.seatNumber!
-                                                          .isNotEmpty
-                                                  ? currentTrip.seatNumber!
-                                                  : 'Tap to Edit',
-                                              style: TextStyle(
-                                                fontSize:
-                                                    currentTrip.seatNumber !=
-                                                                null &&
-                                                            currentTrip
-                                                                .seatNumber!
-                                                                .isNotEmpty
-                                                        ? 18
-                                                        : 12,
-                                                fontWeight:
-                                                    currentTrip.seatNumber !=
-                                                                null &&
-                                                            currentTrip
-                                                                .seatNumber!
-                                                                .isNotEmpty
-                                                        ? FontWeight.w600
-                                                        : FontWeight.w400,
-                                                color: currentTrip.seatNumber !=
-                                                            null &&
-                                                        currentTrip.seatNumber!
-                                                            .isNotEmpty
-                                                    ? const Color(0xFF284B63)
-                                                    : const Color(0xFF3C6E71)
-                                                        .withOpacity(0.5),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          // Deuxième rangée : Classe et Voiture
-                          Row(
-                            children: [
-                              // Classe
-                              Expanded(
-                                child: Container(
-                                  height: 100,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                        color: const Color(0xFFE5E5E5)),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.05),
-                                        blurRadius: 10,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Material(
-                                    color: Colors.transparent,
-                                    child: InkWell(
-                                      onTap: () => _editBookingDetails('class'),
-                                      borderRadius: BorderRadius.circular(12),
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(12),
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Row(
-                                              children: [
-                                                const Icon(
-                                                  Icons
-                                                      .airline_seat_recline_extra,
-                                                  size: 24,
-                                                  color: Color(0xFF284B63),
-                                                ),
-                                                const SizedBox(width: 8),
-                                                const Text(
-                                                  'Classe',
-                                                  style: TextStyle(
-                                                    fontSize: 14,
-                                                    color: Color(0xFF3C6E71),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                            const Spacer(),
-                                            Text(
-                                              currentTrip.travelClass != null &&
-                                                      currentTrip.travelClass!
-                                                          .isNotEmpty
-                                                  ? currentTrip.travelClass!
-                                                  : 'Tap to Edit',
-                                              style: TextStyle(
-                                                fontSize:
-                                                    currentTrip.travelClass !=
-                                                                null &&
-                                                            currentTrip
-                                                                .travelClass!
-                                                                .isNotEmpty
-                                                        ? 18
-                                                        : 12,
-                                                fontWeight:
-                                                    currentTrip.travelClass !=
-                                                                null &&
-                                                            currentTrip
-                                                                .travelClass!
-                                                                .isNotEmpty
-                                                        ? FontWeight.w600
-                                                        : FontWeight.w400,
-                                                color: currentTrip
-                                                                .travelClass !=
-                                                            null &&
-                                                        currentTrip.travelClass!
-                                                            .isNotEmpty
-                                                    ? const Color(0xFF284B63)
-                                                    : const Color(0xFF3C6E71)
-                                                        .withOpacity(0.5),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              // Voiture
-                              Expanded(
-                                child: Container(
-                                  height: 100,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                        color: const Color(0xFFE5E5E5)),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.05),
-                                        blurRadius: 10,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Material(
-                                    color: Colors.transparent,
-                                    child: InkWell(
-                                      onTap: () => _editBookingDetails('car'),
-                                      borderRadius: BorderRadius.circular(12),
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(12),
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Row(
-                                              children: [
-                                                const Icon(
-                                                  Icons.directions_railway,
-                                                  size: 24,
-                                                  color: Color(0xFF284B63),
-                                                ),
-                                                const SizedBox(width: 8),
-                                                const Text(
-                                                  'Voiture',
-                                                  style: TextStyle(
-                                                    fontSize: 14,
-                                                    color: Color(0xFF3C6E71),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                            const Spacer(),
-                                            Text(
-                                              currentTrip.carNumber != null &&
-                                                      currentTrip
-                                                          .carNumber!.isNotEmpty
-                                                  ? currentTrip.carNumber!
-                                                  : 'Tap to Edit',
-                                              style: TextStyle(
-                                                fontSize:
-                                                    currentTrip.carNumber !=
-                                                                null &&
-                                                            currentTrip
-                                                                .carNumber!
-                                                                .isNotEmpty
-                                                        ? 18
-                                                        : 12,
-                                                fontWeight:
-                                                    currentTrip.carNumber !=
-                                                                null &&
-                                                            currentTrip
-                                                                .carNumber!
-                                                                .isNotEmpty
-                                                        ? FontWeight.w600
-                                                        : FontWeight.w400,
-                                                color: currentTrip.carNumber !=
-                                                            null &&
-                                                        currentTrip.carNumber!
-                                                            .isNotEmpty
-                                                    ? const Color(0xFF284B63)
-                                                    : const Color(0xFF3C6E71)
-                                                        .withOpacity(0.5),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    const Divider(height: 1, color: Color(0xFFD9D9D9)),
-                    // Section "Good to Know"
-                    Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Informations',
-                            style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF284B63),
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-                          Container(
-                            clipBehavior: Clip.none,
-                            child: Stack(
-                              clipBehavior: Clip.none,
-                              children: [
-                                // Ligne verticale
-                                Positioned(
-                                  left: 6,
-                                  top: 0,
-                                  bottom: 0,
-                                  child: Container(
-                                    width: 1.5,
-                                    color: const Color(0xFFE5E5E5),
-                                  ),
-                                ),
-                                // Contenu principal
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    _buildTimelineItem(
-                                      icon: Icons.train,
-                                      title: 'Train',
-                                      value:
-                                          '${currentTrip.trainType} ${currentTrip.trainNumber}',
-                                    ),
-                                    const SizedBox(height: 32),
-                                    _buildTimelineItem(
-                                      icon: Icons.calendar_today,
-                                      title: 'Date',
-                                      value: DateFormat(
-                                              'EEEE d MMMM y', 'fr_FR')
-                                          .format(currentTrip.departureTime),
-                                    ),
-                                    const SizedBox(height: 32),
-                                    _buildTimelineItem(
-                                      icon: Icons.access_time,
-                                      title: 'Durée',
-                                      value: currentTrip.formattedDuration,
-                                    ),
-                                    const SizedBox(height: 32),
-                                    _buildTimelineItem(
-                                      icon: Icons.place,
-                                      title: 'Distance',
-                                      value:
-                                          '${currentTrip.distance.toStringAsFixed(0)} km',
-                                    ),
-                                  ],
-                                ),
-                                // Train animé (au-dessus de tout)
-                                AnimatedBuilder(
-                                  animation: _trainAnimation,
-                                  builder: (context, child) {
-                                    return Positioned(
-                                      left: -8,
-                                      top: _trainAnimation.value * 300,
-                                      child: Container(
-                                        width: 28,
-                                        height: 28,
-                                        decoration: const BoxDecoration(
-                                          color: Color(0xFF284B63),
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: Center(
-                                          child: Icon(
-                                            Icons.train,
-                                            size: 16,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Divider(height: 1, color: Color(0xFFD9D9D9)),
-
-                    // Section "My History"
-                    Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Mon historique sur ce trajet',
-                            style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF284B63),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            '${currentTrip.departureStation} → ${currentTrip.arrivalStation}',
-                            style: const TextStyle(
-                              color: Color(0xFF3C6E71),
-                              fontSize: 12,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          Consumer<TripProvider>(
-                            builder: (context, tripProvider, child) {
-                              // Calculer les statistiques
-                              final similarTrips = tripProvider.trips
-                                  .where((t) =>
-                                      t.departureStationId ==
-                                          currentTrip.departureStationId &&
-                                      t.arrivalStationId ==
-                                          currentTrip.arrivalStationId)
-                                  .toList();
-
-                              final totalTrips = similarTrips.length;
-                              final totalDistance = similarTrips.fold<double>(
-                                  0, (sum, trip) => sum + trip.distance);
-
-                              // Calculer la durée totale en minutes
-                              final totalDurationMinutes =
-                                  similarTrips.fold<int>(
-                                0,
-                                (sum, trip) => sum + trip.duration.inMinutes,
-                              );
-
-                              // Convertir en heures et minutes
-                              final hours = totalDurationMinutes ~/ 60;
-                              final minutes = totalDurationMinutes % 60;
-                              final formattedTotalDuration =
-                                  '${hours}h${minutes.toString().padLeft(2, '0')}';
-
-                              return Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceAround,
-                                children: [
-                                  _buildStatColumn(
-                                    icon: Icons.train,
-                                    value: totalTrips.toString(),
-                                    label: 'Trajets',
-                                  ),
-                                  _buildStatColumn(
-                                    icon: Icons.speed,
-                                    value:
-                                        '${totalDistance.toStringAsFixed(0)} km',
-                                    label: 'Distance',
-                                  ),
-                                  _buildStatColumn(
-                                    icon: Icons.access_time,
-                                    value: formattedTotalDuration,
-                                    label: 'Temps de trajet',
-                                  ),
-                                ],
-                              );
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Divider(height: 1, color: Color(0xFFD9D9D9)),
-                    // Section Notes
-                    // Padding(
-                    //   padding: const EdgeInsets.all(16.0),
-                    //   child: Column(
-                    //     crossAxisAlignment: CrossAxisAlignment.start,
-                    //     children: [
-                    //       const Text(
-                    //         'Notes',
-                    //         style: TextStyle(
-                    //           fontSize: 24,
-                    //           fontWeight: FontWeight.bold,
-                    //           color: Color(0xFF284B63),
-                    //         ),
-                    //       ),
-                    //       const SizedBox(height: 16),
-                    //       Container(
-                    //         padding: const EdgeInsets.all(16),
-                    //         decoration: BoxDecoration(
-                    //           color: AppColors.light,
-                    //           borderRadius: BorderRadius.circular(12),
-                    //         ),
-                    //         child: Text(
-                    //           currentTrip.notes ?? 'Aucune note',
-                    //           style: TextStyle(
-                    //             color: currentTrip.notes != null
-                    //                 ? AppColors.dark
-                    //                 : AppColors.secondary,
-                    //             fontSize: 16,
-                    //           ),
-                    //         ),
-                    //       ),
-                    //     ],
-                    //   ),
-                    // ),
-                    // const Divider(height: 1, color: Color(0xFFD9D9D9)),
-                    // Bouton de suppression
-                    Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: ElevatedButton(
-                        onPressed: () async {
-                          final confirmed = await showDialog<bool>(
-                            context: context,
-                            builder: (BuildContext context) {
-                              return AlertDialog(
-                                title: const Text('Supprimer le trajet'),
-                                content: const Text(
-                                    'Êtes-vous sûr de vouloir supprimer ce trajet ?'),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () =>
-                                        Navigator.pop(context, false),
-                                    child: const Text('Annuler'),
-                                  ),
-                                  TextButton(
-                                    onPressed: () =>
-                                        Navigator.pop(context, true),
-                                    child: const Text('Supprimer'),
-                                  ),
-                                ],
-                              );
-                            },
-                          );
-
-                          if (confirmed == true && mounted) {
-                            await context
-                                .read<TripProvider>()
-                                .deleteTrip(currentTrip.id);
-                            if (mounted) {
-                              Navigator.pop(context);
-                            }
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
-                          foregroundColor: Colors.white,
-                          minimumSize: const Size(double.infinity, 50),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: const Text(
-                          'Supprimer le trajet',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+    return Scaffold(
+      backgroundColor: Theme.of(context).colorScheme.background,
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            expandedHeight: 300.0,
+            pinned: true,
+            backgroundColor: Theme.of(context).colorScheme.primary,
+            foregroundColor: Theme.of(context).colorScheme.onPrimary,
+            flexibleSpace: FlexibleSpaceBar(
+              titlePadding: const EdgeInsets.only(left: 24, bottom: 16),
+              title: Container(
+                  // padding:
+                  //     const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  // decoration: BoxDecoration(
+                  //   color: Theme.of(context).colorScheme.surface.withOpacity(0.8),
+                  //   borderRadius: BorderRadius.circular(12),
+                  //   border: Border.all(
+                  //     color: Theme.of(context)
+                  //         .colorScheme
+                  //         .onSurface
+                  //         .withOpacity(0.1),
+                  //     width: 1,
+                  //   ),
+                  // ),
+                  // child: Text(
+                  //   "${trip.departureCityName} → ${trip.arrivalCityName}",
+                  //   style: AppTypography.displaySmall.copyWith(
+                  //     color: Theme.of(context).colorScheme.onSurface,
+                  //     fontWeight: FontWeight.w600,
+                  //     fontSize: 10,
+                  //   ),
+                  // ),
+                  ),
+              centerTitle: false,
+              background: _buildMap(),
+            ),
           ),
-        );
-      },
-    );
-  }
-
-  Widget _buildInfoRow({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Row(
-          children: [
-            Icon(icon, size: 20, color: AppColors.primary),
-            const SizedBox(width: 12),
-            Expanded(
+          SliverToBoxAdapter(
+            child: Container(
+              padding: const EdgeInsets.all(0.0),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.background,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(24),
+                  topRight: Radius.circular(24),
+                ),
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF3C6E71),
+                  _buildHeader(),
+                  const SizedBox(height: 24),
+                  _buildTripTimeline(),
+                  const SizedBox(height: 24),
+                  // Informations en temps réel (si disponibles)
+                  if (shouldShowRealtime && _realtimeInfo != null)
+                    InfoCard(
+                      title: _getDisruptionTitle(
+                          _realtimeInfo!['disruptionType'] as String),
+                      subtitle: _realtimeInfo!['message'] as String,
+                      description: _getDisruptionDescription(_realtimeInfo!),
+                      icon: _getDisruptionIcon(
+                          _realtimeInfo!['disruptionType'] as String),
+                      iconColor: _getDisruptionColor(
+                          _realtimeInfo!['disruptionType'] as String),
+                      backgroundColor: _getDisruptionBackgroundColor(
+                          _realtimeInfo!['disruptionType'] as String),
+                      borderColor: _getDisruptionColor(
+                              _realtimeInfo!['disruptionType'] as String)
+                          .withOpacity(0.3),
+                      titleColor: _getDisruptionColor(
+                          _realtimeInfo!['disruptionType'] as String),
+                      subtitleColor: Theme.of(context).colorScheme.onSurface,
+                      descriptionColor: _getDisruptionColor(
+                          _realtimeInfo!['disruptionType'] as String),
+                      onTap: _showDisruptionDetails,
                     ),
-                  ),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(
-                      color: Color(0xFF284B63),
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
+                  if (shouldShowRealtime && _isLoadingRealtime)
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          children: [
+                            const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'Vérification des informations en temps réel...',
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
+                  if (shouldShowRealtime && _realtimeError != null)
+                    Card(
+                      margin: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.error_outline,
+                                color: Colors.orange),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                _realtimeError!,
+                                style: AppTypography.bodyMedium
+                                    .copyWith(color: Colors.orange),
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.refresh, size: 20),
+                              onPressed: _refreshRealtimeInfo,
+                              color: Colors.orange,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  if (shouldShowRealtime && _realtimeInfo != null ||
+                      shouldShowRealtime && _isLoadingRealtime ||
+                      shouldShowRealtime && _realtimeError != null)
+                    const SizedBox(height: 24),
+                  if (shouldShowRealtime) _buildCountdownCard(l10n),
+                  if (shouldShowRealtime) const SizedBox(height: 24),
+                  _buildJourneyInfoCard(l10n),
+                  const SizedBox(height: 16),
+                  _buildTicketInfoCard(l10n),
+                  const SizedBox(height: 16),
+                  _buildCarbonFootprintCard(l10n),
+                  const SizedBox(height: 16),
+                  _buildTripStatsCard(l10n),
+                  const SizedBox(height: 24),
+                  _buildDeleteButton(l10n),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: Color(0xFF284B63)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          TrainLogo(trainType: trip.trainType, size: 40),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(trip.trainType.toUpperCase(),
+                    style: AppTypography.labelLarge.copyWith(
+                        color: Theme.of(context).colorScheme.onSurface)),
+                Text(
+                  "${trip.departureCityName} → ${trip.arrivalCityName}",
+                  style: AppTypography.headlineMedium,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 16),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.secondary,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(trip.trainNumber,
+                style: AppTypography.trainNumber.copyWith(
+                    fontSize: 16,
+                    color: Theme.of(context).colorScheme.onSecondary)),
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTripTimeline() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildTimeColumn(trip.departureTime, trip.departureStation),
+          _buildTimelineGraphic(),
+          _buildTimeColumn(trip.arrivalTime, trip.arrivalStation,
+              isArrival: true),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTimeColumn(DateTime time, String station,
+      {bool isArrival = false}) {
+    return Expanded(
+      child: Column(
+        crossAxisAlignment:
+            isArrival ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        children: [
+          _flipFraseBoard(
+            '${DateFormat('HH').format(time)}H${DateFormat('mm').format(time)}',
+          ),
+          const SizedBox(height: 8),
+          Text(station,
+              style: AppTypography.bodyMedium
+                  .copyWith(color: Theme.of(context).colorScheme.onSurface),
+              textAlign: isArrival ? TextAlign.right : TextAlign.left),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTimelineGraphic() {
+    return Expanded(
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            child: LayoutBuilder(builder: (context, constraints) {
+              return Stack(
+                clipBehavior: Clip.none,
+                alignment: Alignment.center,
+                children: [
+                  // Layer 1: Dots and Line
+                  Row(
+                    children: [
+                      Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.primary,
+                              shape: BoxShape.circle)),
+                      Expanded(
+                        child: Container(
+                            height: 2,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withOpacity(0.3)),
+                      ),
+                      Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.secondary,
+                              shape: BoxShape.circle)),
+                    ],
+                  ),
+                  // Layer 2: Animated Train on top
+                  AnimatedBuilder(
+                    animation: _trainAnimation,
+                    builder: (context, child) {
+                      return Positioned(
+                        left: _trainAnimation.value * constraints.maxWidth - 10,
+                        child: Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.onPrimary,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(Icons.train_outlined,
+                              color: Theme.of(context).colorScheme.primary,
+                              size: 16),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              );
+            }),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            "${trip.duration.inHours}h ${trip.duration.inMinutes.remainder(60)}min",
+            style: AppTypography.labelMedium
+                .copyWith(color: Theme.of(context).colorScheme.onSurface),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCountdownCard(AppLocalizations l10n) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.schedule,
+                  color: Theme.of(context).colorScheme.primary,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Départ dans',
+                  style: AppTypography.headlineSmall.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildCountdownUnit(_getDaysUntil(trip.departureTime), 'JOURS'),
+                _buildCountdownUnit(
+                    trip.departureTime
+                        .difference(DateTime.now())
+                        .inHours
+                        .remainder(24),
+                    'HEURES'),
+                _buildCountdownUnit(
+                    trip.departureTime
+                        .difference(DateTime.now())
+                        .inMinutes
+                        .remainder(60),
+                    'MINUTES'),
+              ],
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildStatColumn({
-    required IconData icon,
-    required String value,
-    required String label,
-  }) {
+  Widget _buildCountdownUnit(int value, String label) {
     return Column(
       children: [
-        Icon(icon, size: 24, color: AppColors.secondary),
-        const SizedBox(height: 8),
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF284B63),
-          ),
-        ),
-        Text(
-          label,
-          style: const TextStyle(
-            color: Color(0xFF3C6E71),
-            fontSize: 14,
-          ),
-        ),
+        Text(value.toString(), style: AppTypography.displayMedium),
+        Text(label.toUpperCase(),
+            style: AppTypography.labelMedium
+                .copyWith(color: Theme.of(context).colorScheme.onSurface)),
       ],
     );
   }
 
-  Widget _buildTimelineItem({
-    required IconData icon,
-    required String title,
-    required String value,
-  }) {
-    return Row(
-      children: [
-        // Point sur la ligne
-        Container(
-          width: 14,
-          height: 14,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: const Color(0xFF284B63),
-              width: 1.5,
+  Widget _buildJourneyInfoCard(AppLocalizations l10n) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.route,
+                  color: Theme.of(context).colorScheme.primary,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Informations du trajet',
+                  style: AppTypography.headlineSmall.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+              ],
             ),
-          ),
+            const SizedBox(height: 12),
+            _buildInfoRow('Distance', '${trip.distance.toStringAsFixed(0)} km'),
+            _buildInfoRow('Durée', trip.formattedDuration),
+            _buildInfoRow(
+                'Prix',
+                trip.price > 0
+                    ? '${trip.price.toStringAsFixed(2)} €'
+                    : 'Non renseigné'),
+            if (trip.company != null && trip.company!.isNotEmpty)
+              _buildInfoRow('Compagnie', trip.company!),
+            if (trip.brand != null && trip.brand!.isNotEmpty)
+              _buildInfoRow('Marque', trip.brand!),
+            if (trip.notes != null && trip.notes!.isNotEmpty)
+              _buildInfoRow('Notes', trip.notes!),
+          ],
         ),
-        const SizedBox(width: 20),
-        // Contenu
-        Expanded(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Icon(
-                icon,
-                size: 20,
-                color: const Color(0xFF284B63),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: Color(0xFF3C6E71),
+      ),
+    );
+  }
+
+  Widget _buildTicketInfoCard(AppLocalizations l10n) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.confirmation_number,
+                  color: Theme.of(context).colorScheme.primary,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Informations du billet',
+                  style: AppTypography.headlineSmall.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            _buildEditableInfoRow(
+              'Numéro de billet',
+              _ticketNumber.isEmpty ? 'Non renseigné' : _ticketNumber,
+              Icons.copy,
+              () => _copyToClipboard(_ticketNumber),
+              isEnabled: _ticketNumber.isNotEmpty,
+            ),
+            _buildEditableInfoRow(
+              'Siège',
+              _seatNumber.isEmpty ? 'Non renseigné' : _seatNumber,
+              Icons.edit,
+              _editSeat,
+            ),
+            _buildInfoRow('Voiture', trip.carNumber ?? 'Non renseigné'),
+            _buildInfoRow('Classe', trip.travelClass ?? 'Non renseigné'),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCarbonFootprintCard(AppLocalizations l10n) {
+    // Calcul de l'empreinte carbone (approximatif)
+    final trainFootprint = trip.distance * 0.014; // kg CO2/km pour le train
+    final carFootprint = trip.distance * 0.21; // kg CO2/km pour la voiture
+    final planeFootprint = trip.distance * 0.255; // kg CO2/km pour l'avion
+
+    // Calcul d'équivalents concrets
+    final treesNeeded =
+        (trainFootprint / 22).round(); // 1 arbre absorbe ~22kg CO2/an
+    final smartphoneCharges =
+        (trainFootprint / 0.05).round(); // 1 charge = ~0.05kg CO2
+    final kmEnVoiture = (trainFootprint / 0.21).round();
+
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.eco,
+                  color: Theme.of(context).colorScheme.primary,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Impact environnemental',
+                  style: AppTypography.headlineSmall.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Empreinte carbone',
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
                       ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${trainFootprint.toStringAsFixed(1)} kg CO₂',
+                        style: AppTypography.headlineSmall.copyWith(
+                          color: Theme.of(context).colorScheme.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color:
+                        Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    Icons.eco,
+                    color: Theme.of(context).colorScheme.primary,
+                    size: 24,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            _buildInfoRow('Équivalent voiture',
+                '${carFootprint.toStringAsFixed(1)} kg CO₂'),
+            _buildInfoRow('Équivalent avion',
+                '${planeFootprint.toStringAsFixed(1)} kg CO₂'),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Cela correspond à :',
+                    style: AppTypography.bodySmall.copyWith(
+                      color: Theme.of(context).colorScheme.primary,
+                      fontWeight: FontWeight.w600,
                     ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '• ${treesNeeded} arbre(s) pour absorber ce CO₂ en 1 an',
+                    style: AppTypography.bodySmall.copyWith(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withOpacity(0.8),
+                    ),
+                  ),
+                  Text(
+                    '• ${smartphoneCharges} charge(s) de smartphone',
+                    style: AppTypography.bodySmall.copyWith(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withOpacity(0.8),
+                    ),
+                  ),
+                  Text(
+                    '• ${kmEnVoiture} km en voiture',
+                    style: AppTypography.bodySmall.copyWith(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withOpacity(0.8),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTripStatsCard(AppLocalizations l10n) {
+    return Consumer<TripProvider>(
+      builder: (context, tripProvider, child) {
+        final allTrips = tripProvider.trips;
+        final sameRouteTrips = allTrips
+            .where((t) =>
+                t.departureStation == trip.departureStation &&
+                t.arrivalStation == trip.arrivalStation)
+            .length;
+
+        final sameRouteDistance = allTrips
+            .where((t) =>
+                t.departureStation == trip.departureStation &&
+                t.arrivalStation == trip.arrivalStation)
+            .fold(0.0, (sum, t) => sum + t.distance);
+
+        final avgPrice = allTrips
+            .where((t) =>
+                t.departureStation == trip.departureStation &&
+                t.arrivalStation == trip.arrivalStation)
+            .where((t) => t.price > 0)
+            .fold(0.0, (sum, t) => sum + t.price);
+
+        final priceCount = allTrips
+            .where((t) =>
+                t.departureStation == trip.departureStation &&
+                t.arrivalStation == trip.arrivalStation)
+            .where((t) => t.price > 0)
+            .length;
+
+        return Card(
+          elevation: 2,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.analytics,
+                      color: Theme.of(context).colorScheme.primary,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
                     Text(
-                      value,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF284B63),
+                      'Statistiques de cette route',
+                      style: AppTypography.headlineSmall.copyWith(
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                   ],
                 ),
-              ),
-            ],
+                const SizedBox(height: 12),
+                _buildInfoRow('Effectué', '$sameRouteTrips fois'),
+                _buildInfoRow('Distance totale',
+                    '${sameRouteDistance.toStringAsFixed(0)} km'),
+                if (priceCount > 0)
+                  _buildInfoRow('Prix moyen',
+                      '${(avgPrice / priceCount).toStringAsFixed(2)} €'),
+                _buildInfoRow('Dernière fois', _getLastTripDate(allTrips)),
+              ],
+            ),
           ),
-        ),
-      ],
-    );
-  }
-
-  Future<void> _editBookingDetails(String type) async {
-    final currentTrip = context
-        .read<TripProvider>()
-        .trips
-        .firstWhere((t) => t.id == widget.trip.id);
-    String? tempTicketNumber = currentTrip.ticketNumber;
-    String? tempSeatNumber = currentTrip.seatNumber;
-    String? tempTravelClass = currentTrip.travelClass;
-    String? tempCarNumber = currentTrip.carNumber;
-
-    final result = await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setState) {
-            return DraggableScrollableSheet(
-              initialChildSize: 0.9,
-              minChildSize: 0.5,
-              maxChildSize: 0.95,
-              expand: false,
-              builder: (context, scrollController) {
-                return Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Détails de réservation',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF284B63),
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: () => Navigator.pop(context, false),
-                            child: const Text(
-                              'Annuler',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.red,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Divider(height: 1),
-                    Expanded(
-                      child: ListView(
-                        controller: scrollController,
-                        padding: const EdgeInsets.all(16),
-                        children: [
-                          // Dossier - Champ texte
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Dossier',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF284B63),
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              TextField(
-                                controller: TextEditingController(
-                                    text: tempTicketNumber),
-                                onChanged: (value) => tempTicketNumber = value,
-                                decoration: InputDecoration(
-                                  hintText: 'Numéro de dossier',
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    borderSide: const BorderSide(
-                                        color: Color(0xFFE5E5E5)),
-                                  ),
-                                  contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 12, vertical: 8),
-                                ),
-                                style: const TextStyle(fontSize: 14),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 24),
-                          // Siège - Champ numérique
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Siège',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF284B63),
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              TextField(
-                                controller:
-                                    TextEditingController(text: tempSeatNumber),
-                                onChanged: (value) => tempSeatNumber = value,
-                                decoration: InputDecoration(
-                                  hintText: 'Numéro de siège (ex: 12A)',
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    borderSide: const BorderSide(
-                                        color: Color(0xFFE5E5E5)),
-                                  ),
-                                  contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 12, vertical: 8),
-                                ),
-                                style: const TextStyle(fontSize: 14),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 24),
-                          // Classe
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Classe',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF284B63),
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                children: ['Seconde', 'Première', 'Business']
-                                    .map((option) {
-                                  final isSelected = tempTravelClass == option;
-                                  return InkWell(
-                                    onTap: () {
-                                      setState(() => tempTravelClass = option);
-                                    },
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                        vertical: 6,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: isSelected
-                                            ? const Color(0xFF284B63)
-                                            : Colors.white,
-                                        borderRadius: BorderRadius.circular(16),
-                                        border: Border.all(
-                                            color: isSelected
-                                                ? const Color(0xFF284B63)
-                                                : const Color(0xFFE5E5E5)),
-                                      ),
-                                      child: Text(
-                                        option,
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: isSelected
-                                              ? Colors.white
-                                              : const Color(0xFF284B63),
-                                        ),
-                                      ),
-                                    ),
-                                  );
-                                }).toList(),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 24),
-                          // Voiture
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Voiture',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF284B63),
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                children: List.generate(
-                                        15, (index) => (index + 1).toString())
-                                    .map((option) {
-                                  final isSelected = tempCarNumber == option;
-                                  return InkWell(
-                                    onTap: () {
-                                      setState(() => tempCarNumber = option);
-                                    },
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                        vertical: 6,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: isSelected
-                                            ? const Color(0xFF284B63)
-                                            : Colors.white,
-                                        borderRadius: BorderRadius.circular(16),
-                                        border: Border.all(
-                                            color: isSelected
-                                                ? const Color(0xFF284B63)
-                                                : const Color(0xFFE5E5E5)),
-                                      ),
-                                      child: Text(
-                                        option,
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: isSelected
-                                              ? Colors.white
-                                              : const Color(0xFF284B63),
-                                        ),
-                                      ),
-                                    ),
-                                  );
-                                }).toList(),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Divider(height: 1),
-                    Padding(
-                      padding: EdgeInsets.only(
-                        left: 16,
-                        right: 16,
-                        bottom: 16 + MediaQuery.of(context).viewInsets.bottom,
-                        top: 16,
-                      ),
-                      child: SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: () async {
-                            final tripProvider = context.read<TripProvider>();
-                            final updatedTrip = currentTrip.copyWith(
-                              ticketNumber: tempTicketNumber?.isNotEmpty == true
-                                  ? tempTicketNumber
-                                  : null,
-                              seatNumber: tempSeatNumber?.isNotEmpty == true
-                                  ? tempSeatNumber
-                                  : null,
-                              carNumber: tempCarNumber?.isNotEmpty == true
-                                  ? tempCarNumber
-                                  : null,
-                              travelClass: tempTravelClass?.isNotEmpty == true
-                                  ? tempTravelClass
-                                  : null,
-                            );
-                            await tripProvider.updateTrip(updatedTrip);
-                            if (mounted) {
-                              Navigator.pop(context, true);
-                            }
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF284B63),
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          child: const Text(
-                            'Sauvegarder',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                );
-              },
-            );
-          },
         );
       },
     );
+  }
 
-    if (result == true && mounted) {
-      setState(() {
-        _ticketNumber = tempTicketNumber ?? '';
-      });
+  String _getLastTripDate(List<Trip> allTrips) {
+    final sameRouteTrips = allTrips
+        .where((t) =>
+            t.departureStation == trip.departureStation &&
+            t.arrivalStation == trip.arrivalStation)
+        .toList();
+
+    if (sameRouteTrips.isEmpty) return 'Première fois';
+
+    final lastTrip = sameRouteTrips
+        .reduce((a, b) => a.departureTime.isAfter(b.departureTime) ? a : b);
+
+    final now = DateTime.now();
+    final difference = now.difference(lastTrip.departureTime);
+
+    if (difference.inDays == 0) return 'Aujourd\'hui';
+    if (difference.inDays == 1) return 'Hier';
+    if (difference.inDays < 7) return 'Il y a ${difference.inDays} jours';
+    if (difference.inDays < 30)
+      return 'Il y a ${(difference.inDays / 7).round()} semaines';
+    if (difference.inDays < 365)
+      return 'Il y a ${(difference.inDays / 30).round()} mois';
+    return 'Il y a ${(difference.inDays / 365).round()} an(s)';
+  }
+
+  Widget _buildInfoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: AppTypography.bodyMedium.copyWith(
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+            ),
+          ),
+          Text(
+            value,
+            style: AppTypography.bodyMedium.copyWith(
+              color: Theme.of(context).colorScheme.onSurface,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEditableInfoRow(
+      String label, String value, IconData icon, VoidCallback onTap,
+      {bool isEnabled = true}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: AppTypography.bodyMedium.copyWith(
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+            ),
+          ),
+          Row(
+            children: [
+              Text(
+                value,
+                style: AppTypography.bodyMedium.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                icon: Icon(icon, size: 18),
+                onPressed: isEnabled ? onTap : null,
+                color: isEnabled
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDeleteButton(AppLocalizations l10n) {
+    return OutlinedButton.icon(
+      style: OutlinedButton.styleFrom(
+        foregroundColor: Theme.of(context).colorScheme.error,
+        side: BorderSide(color: Theme.of(context).colorScheme.error),
+        minimumSize: const Size(double.infinity, 50),
+      ),
+      icon: const Icon(Icons.delete_outline),
+      label: Text(l10n.deleteTripButton),
+      onPressed: () async {
+        final confirm = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(l10n.deleteConfirmationTitle),
+            content: Text(l10n.deleteConfirmationMessage),
+            actions: [
+              TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: Text(l10n.cancelButton)),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: Text(l10n.deleteButton,
+                    style:
+                        TextStyle(color: Theme.of(context).colorScheme.error)),
+              ),
+            ],
+          ),
+        );
+
+        if (confirm == true && mounted) {
+          await context.read<TripProvider>().deleteTrip(trip.id);
+          Navigator.pop(context);
+        }
+      },
+    );
+  }
+
+  Widget _flipFraseBoard(String frase) => CustomFlipFraseBoard(
+        flipType: FlipType.spinFlip,
+        axis: Axis.vertical,
+        startLetter: 'A',
+        endFrase: frase,
+        fontSize: 12,
+        fontFamily: 'Inter',
+        flipLetterHeight: 25,
+        flipLetterWidth: 18,
+        hingeWidth: 0.4,
+        hingeColor: Theme.of(context).colorScheme.secondary.withOpacity(0.5),
+        startColors: [Theme.of(context).colorScheme.primary],
+        letterColors: [Theme.of(context).colorScheme.onPrimary],
+        borderColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.3),
+        endColors: [Theme.of(context).colorScheme.primary],
+        letterSpacing: 1,
+        minFlipDelay: 50,
+        maxFlipDelay: 130,
+      );
+
+  /// Affiche la modal avec les détails des perturbations
+  void _showDisruptionDetails() {
+    if (_realtimeInfo != null) {
+      showDialog(
+        context: context,
+        builder: (context) => DisruptionDetailsModal(
+          disruptionInfo: _realtimeInfo!,
+          trainNumber: trip.trainNumber,
+          trainType: trip.trainType,
+        ),
+      );
     }
   }
 }
 
 class DottedLinePainter extends CustomPainter {
+  final Color color;
+
+  DottedLinePainter({required this.color});
+
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = AppColors.light
+      ..color = color
       ..strokeWidth = 1
       ..strokeCap = StrokeCap.round;
 

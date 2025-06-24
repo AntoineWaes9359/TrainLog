@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:trainlog/theme/app_theme.dart';
 import 'package:trainlog/theme/colors.dart';
-import '../providers/trip_provider.dart';
-import 'package:intl/intl.dart';
+import 'package:trainlog/theme/typography.dart';
+import '../providers/trip_provider_improved.dart';
 import '../models/trip.dart';
+import '../widgets/common/info_card.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class StatsScreen extends StatefulWidget {
   const StatsScreen({super.key});
@@ -118,27 +121,25 @@ class _StatsScreenState extends State<StatsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
-      backgroundColor: AppColors.white,
+      backgroundColor: Theme.of(context).colorScheme.background,
       body: CustomScrollView(
         slivers: [
-          const SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.only(
-                left: 20,
-                right: 24,
-                top: 60,
-                bottom: 5,
+          SliverAppBar(
+            backgroundColor: Theme.of(context).colorScheme.background,
+            pinned: true,
+            elevation: 0,
+            expandedHeight: 120,
+            flexibleSpace: FlexibleSpaceBar(
+              titlePadding: const EdgeInsets.only(left: 24, bottom: 16),
+              title: Text(
+                l10n.statsTitle,
+                style: AppTypography.displaySmall.copyWith(
+                    color: Theme.of(context).colorScheme.onBackground),
               ),
-              child: Text(
-                'Statistiques',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.dark,
-                  letterSpacing: 1.2,
-                ),
-              ),
+              centerTitle: false,
             ),
           ),
           SliverToBoxAdapter(
@@ -160,6 +161,8 @@ class _StatsScreenState extends State<StatsScreen> {
               children: [
                 _buildStatsCard(),
                 _buildMostRiddenTrainCard(),
+                // Exemples d'utilisation du widget InfoCard
+                _buildInfoCardsExample(),
                 const SizedBox(height: 80),
               ],
             ),
@@ -170,7 +173,12 @@ class _StatsScreenState extends State<StatsScreen> {
   }
 
   Widget _buildPeriodButton(String period) {
+    final l10n = AppLocalizations.of(context)!;
     bool isSelected = _selectedPeriod == period;
+
+    // Traduire 'ALL-TIME' en 'TOUT'
+    String displayText = period == 'ALL-TIME' ? l10n.allTime : period;
+
     return GestureDetector(
       onTap: () {
         setState(() {
@@ -178,18 +186,21 @@ class _StatsScreenState extends State<StatsScreen> {
         });
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 11),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         margin: const EdgeInsets.only(right: 8),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : AppColors.light,
-          borderRadius: BorderRadius.circular(20),
+          color: isSelected
+              ? Theme.of(context).colorScheme.primary
+              : Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(12),
         ),
         child: Text(
-          period,
-          style: TextStyle(
-            color: isSelected ? AppColors.white : AppColors.dark,
+          displayText,
+          style: AppTypography.bodySmall.copyWith(
+            color: isSelected
+                ? Theme.of(context).colorScheme.onPrimary
+                : Theme.of(context).colorScheme.onSurface,
             fontWeight: FontWeight.w500,
-            fontSize: 12,
           ),
         ),
       ),
@@ -199,6 +210,7 @@ class _StatsScreenState extends State<StatsScreen> {
   Widget _buildStatsCard() {
     return Consumer<TripProvider>(
       builder: (context, tripProvider, child) {
+        final l10n = AppLocalizations.of(context)!;
         final List<Trip> tripsForPeriod =
             _getTripsForPeriod(tripProvider.trips);
         final int totalTrips = _getTotalTrips(tripsForPeriod);
@@ -211,24 +223,14 @@ class _StatsScreenState extends State<StatsScreen> {
         return Container(
           margin: const EdgeInsets.fromLTRB(16, 16, 16, 16),
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color.fromRGBO(40, 75, 99, 1), // Couleur principale
-                Color.fromRGBO(30, 58, 79, 1), // Légèrement plus foncée
-                Color.fromRGBO(40, 75, 99, 1), // Couleur principale
-                Color.fromRGBO(50, 91, 122, 1), // Légèrement plus claire
-              ],
-              stops: [0.0, 0.3, 0.7, 1.0],
-            ),
+            gradient: AppColors.linearPrimaryAccent,
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: AppColors.dark.withOpacity(0.1),
+                color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
                 blurRadius: 20,
                 offset: const Offset(0, 4),
-              ),
+              )
             ],
           ),
           child: Padding(
@@ -240,18 +242,16 @@ class _StatsScreenState extends State<StatsScreen> {
                 // Titre
                 Text(
                   '$_selectedPeriod TRAINLOG PASSPORT',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
+                  style: AppTypography.headlineMedium.copyWith(
+                    color: AppColors.white,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 1.2,
                   ),
                 ),
-                const Text(
+                Text(
                   'PASSPORT • PASS • PASAPORTE',
-                  style: TextStyle(
-                    color: Colors.white60,
-                    fontSize: 10,
+                  style: AppTypography.bodySmall.copyWith(
+                    color: AppColors.white.withOpacity(0.6),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -264,26 +264,23 @@ class _StatsScreenState extends State<StatsScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'TRAINS',
-                            style: TextStyle(
-                              color: Colors.white60,
-                              fontSize: 14,
+                          Text(
+                            l10n.trains,
+                            style: AppTypography.bodySmall.copyWith(
+                              color: AppColors.white.withOpacity(0.8),
                             ),
                           ),
                           Text(
                             '$totalTrips',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 36,
+                            style: AppTypography.displayMedium.copyWith(
+                              color: AppColors.white,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           Text(
                             '$longDistanceTrips Long Distance',
-                            style: const TextStyle(
-                              color: Colors.white60,
-                              fontSize: 12,
+                            style: AppTypography.bodySmall.copyWith(
+                              color: AppColors.white.withOpacity(0.8),
                             ),
                           ),
                         ],
@@ -294,38 +291,34 @@ class _StatsScreenState extends State<StatsScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'DISTANCE',
-                            style: TextStyle(
-                              color: Colors.white60,
-                              fontSize: 14,
+                          Text(
+                            l10n.distance,
+                            style: AppTypography.bodySmall.copyWith(
+                              color: AppColors.white.withOpacity(0.8),
                             ),
                           ),
                           Row(
                             children: [
                               Text(
                                 '${totalDistance.toStringAsFixed(0)}',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 36,
+                                style: AppTypography.displayMedium.copyWith(
+                                  color: AppColors.white,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
                               const SizedBox(width: 5),
                               Text(
-                                'km',
-                                style: TextStyle(
-                                  color: Colors.white60,
-                                  fontSize: 15,
+                                l10n.kilometers,
+                                style: AppTypography.bodySmall.copyWith(
+                                  color: AppColors.white.withOpacity(0.8),
                                 ),
                               ),
                             ],
                           ),
                           Text(
                             _getRandomDistanceComparison(totalDistance),
-                            style: const TextStyle(
-                              color: Colors.white60,
-                              fontSize: 12,
+                            style: AppTypography.bodySmall.copyWith(
+                              color: AppColors.white.withOpacity(0.8),
                             ),
                           ),
                         ],
@@ -342,18 +335,16 @@ class _StatsScreenState extends State<StatsScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'TEMPS',
-                            style: TextStyle(
-                              color: Colors.white60,
-                              fontSize: 14,
+                          Text(
+                            l10n.time,
+                            style: AppTypography.bodySmall.copyWith(
+                              color: AppColors.white.withOpacity(0.8),
                             ),
                           ),
                           Text(
                             _formatDuration(totalTime),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 20,
+                            style: AppTypography.headlineSmall.copyWith(
+                              color: AppColors.white,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -365,18 +356,16 @@ class _StatsScreenState extends State<StatsScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'GARES',
-                            style: TextStyle(
-                              color: Colors.white60,
-                              fontSize: 14,
+                          Text(
+                            l10n.stations,
+                            style: AppTypography.bodySmall.copyWith(
+                              color: AppColors.white.withOpacity(0.8),
                             ),
                           ),
                           Text(
                             '$stationsCount',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 20,
+                            style: AppTypography.headlineSmall.copyWith(
+                              color: AppColors.white,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -388,18 +377,16 @@ class _StatsScreenState extends State<StatsScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'COMPAGNIES',
-                            style: TextStyle(
-                              color: Colors.white60,
-                              fontSize: 14,
+                          Text(
+                            l10n.companies,
+                            style: AppTypography.bodySmall.copyWith(
+                              color: AppColors.white.withOpacity(0.8),
                             ),
                           ),
                           Text(
                             '$companiesCount',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 20,
+                            style: AppTypography.headlineSmall.copyWith(
+                              color: AppColors.white,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -415,11 +402,11 @@ class _StatsScreenState extends State<StatsScreen> {
                     color: AppColors.white.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Material(
+                  child: Material(
                     color: Colors.transparent,
                     child: InkWell(
-                      borderRadius: BorderRadius.all(Radius.circular(12)),
-                      child: Padding(
+                      borderRadius: const BorderRadius.all(Radius.circular(12)),
+                      child: const Padding(
                         padding: EdgeInsets.all(12),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -427,14 +414,14 @@ class _StatsScreenState extends State<StatsScreen> {
                             Text(
                               'Toutes les statistiques',
                               style: TextStyle(
-                                color: AppColors.white,
+                                color: Colors.white,
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
                             Icon(
                               Icons.arrow_forward_ios,
-                              color: AppColors.white,
+                              color: Colors.white,
                               size: 14,
                             ),
                           ],
@@ -454,105 +441,109 @@ class _StatsScreenState extends State<StatsScreen> {
   Widget _buildMostRiddenTrainCard() {
     return Consumer<TripProvider>(
       builder: (context, tripProvider, child) {
-        final List<Trip> tripsForPeriod =
-            _getTripsForPeriod(tripProvider.trips);
-        final mostRiddenTrain = _getMostRiddenTrain(tripsForPeriod);
+        final trips = _getTripsForPeriod(tripProvider.trips);
+        final mostRidden = _getMostRiddenTrain(trips);
 
-        if (mostRiddenTrain == null) {
-          return Container(); // Ne rien afficher s'il n'y a pas de trajets
+        if (mostRidden == null) {
+          return const SizedBox.shrink();
         }
 
         return Container(
-          margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          margin: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: AppColors.white,
-            borderRadius: BorderRadius.circular(24),
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: AppColors.dark.withOpacity(0.1),
-                blurRadius: 20,
+                color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
+                blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
             ],
           ),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Train le plus fréquenté',
-                      style: TextStyle(
-                        color: AppColors.primary,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.0,
-                      ),
-                    ),
-                  ],
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Train le plus emprunté',
+                style: AppTypography.headlineMedium.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  mostRiddenTrain.type,
-                  style: const TextStyle(
-                    color: AppColors.primary,
-                    fontSize: 36,
-                    fontWeight: FontWeight.bold,
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Icon(
+                    Icons.train,
+                    color: Theme.of(context).colorScheme.primary,
+                    size: 24,
                   ),
-                ),
-                Text(
-                  '${mostRiddenTrain.count} ${mostRiddenTrain.count > 1 ? 'trajets' : 'trajet'}',
-                  style: const TextStyle(
-                    color: AppColors.secondary,
-                    fontSize: 20,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                // Bouton voir toutes les statistiques
-                Container(
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      borderRadius: const BorderRadius.all(Radius.circular(16)),
-                      onTap: () {
-                        // Action à ajouter
-                      },
-                      child: const Padding(
-                        padding: EdgeInsets.all(12),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Tous les trains',
-                              style: TextStyle(
-                                color: AppColors.primary,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            Icon(
-                              Icons.arrow_forward_ios,
-                              color: AppColors.primary,
-                              size: 14,
-                            ),
-                          ],
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          mostRidden.type.toUpperCase(),
+                          style: AppTypography.headlineSmall.copyWith(
+                            color: Theme.of(context).colorScheme.onSurface,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      ),
+                        Text(
+                          '${mostRidden.count} voyage${mostRidden.count > 1 ? 's' : ''}',
+                          style: AppTypography.bodyMedium.copyWith(
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
+            ],
           ),
         );
       },
+    );
+  }
+
+  Widget _buildInfoCardsExample() {
+    final l10n = AppLocalizations.of(context)!;
+
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Exemples InfoCard',
+            style: AppTypography.headlineMedium.copyWith(
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 16),
+          InfoCard(
+            icon: Icons.info,
+            title: 'Information',
+            subtitle: 'Ceci est un exemple d\'InfoCard',
+            description: 'Description optionnelle pour plus de détails',
+            onTap: () {
+              // Action optionnelle
+            },
+          ),
+          const SizedBox(height: 8),
+          InfoCard(
+            icon: Icons.warning,
+            title: 'Attention',
+            subtitle: 'InfoCard sans description',
+            backgroundColor: Colors.orange.withOpacity(0.1),
+            borderColor: Colors.orange.withOpacity(0.3),
+            iconColor: Colors.orange,
+          ),
+        ],
+      ),
     );
   }
 }

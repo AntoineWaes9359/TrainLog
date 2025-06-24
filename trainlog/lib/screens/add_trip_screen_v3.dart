@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
+import 'package:trainlog/theme/colors.dart';
+import '../providers/trip_provider_improved.dart';
+import '../models/trip.dart';
+import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:uuid/uuid.dart';
 import '../services/sncf_service.dart';
+import '../widgets/train_logo.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:uuid/uuid.dart';
 import '../services/sncb_service.dart';
 import '../services/trenitalia_service.dart';
 import '../services/train_company_service.dart';
 import '../config/api_keys.dart';
-import '../models/trip.dart';
-import '../providers/trip_provider.dart';
 import '../utils/distance_calculator.dart';
 import '../services/ticket_scanner_service.dart';
 import 'dart:convert';
@@ -449,34 +452,60 @@ class _AddTripScreenV3State extends State<AddTripScreenV3> {
   Future<void> _addAutomaticTrip(Map<String, dynamic> journey) async {
     final tripProvider = context.read<TripProvider>();
 
-    // Récupération des informations de la gare de départ
-    final fromStation = journey['from']['stop_point'] as Map<String, dynamic>;
-    final fromAdminRegion =
-        (fromStation['administrative_regions'] as List<dynamic>).first
-            as Map<String, dynamic>;
-    final fromCoord = fromAdminRegion['coord'] as Map<String, dynamic>;
+    try {
+      // Récupération des informations de la gare de départ
+      final fromStation = journey['from']['stop_point'] as Map<String, dynamic>;
 
-    // Récupération des informations de la gare d'arrivée
-    final toStation = journey['to']['stop_point'] as Map<String, dynamic>;
-    final toAdminRegion = (toStation['administrative_regions'] as List<dynamic>)
-        .first as Map<String, dynamic>;
-    final toCoord = toAdminRegion['coord'] as Map<String, dynamic>;
+      // Vérifier si administrative_regions existe et n'est pas vide
+      final fromAdminRegions =
+          fromStation['administrative_regions'] as List<dynamic>?;
+      if (fromAdminRegions == null || fromAdminRegions.isEmpty) {
+        throw Exception(
+            'Données administratives manquantes pour la gare de départ');
+      }
 
-    // Récupération des coordonnées du trajet
-    final geojson = journey['geojson'] as Map<String, dynamic>;
-    final coordinates = (geojson['coordinates'] as List<dynamic>).map((coord) {
-      final coordList = coord as List<dynamic>;
-      return GeoPoint(
-        coordList[1] as double, // latitude
-        coordList[0] as double, // longitude
-      );
-    }).toList();
+      final fromAdminRegion = fromAdminRegions.first as Map<String, dynamic>;
+      final fromCoord = fromAdminRegion['coord'] as Map<String, dynamic>?;
+      if (fromCoord == null) {
+        throw Exception('Coordonnées manquantes pour la gare de départ');
+      }
 
-    await tripProvider.addTrip(
-      Trip(
+      // Récupération des informations de la gare d'arrivée
+      final toStation = journey['to']['stop_point'] as Map<String, dynamic>;
+
+      final toAdminRegions =
+          toStation['administrative_regions'] as List<dynamic>?;
+      if (toAdminRegions == null || toAdminRegions.isEmpty) {
+        throw Exception(
+            'Données administratives manquantes pour la gare d\'arrivée');
+      }
+
+      final toAdminRegion = toAdminRegions.first as Map<String, dynamic>;
+      final toCoord = toAdminRegion['coord'] as Map<String, dynamic>?;
+      if (toCoord == null) {
+        throw Exception('Coordonnées manquantes pour la gare d\'arrivée');
+      }
+
+      // Récupération des coordonnées du trajet (optionnel)
+      List<GeoPoint> coordinates = [];
+      final geojson = journey['geojson'] as Map<String, dynamic>?;
+      if (geojson != null && geojson['coordinates'] != null) {
+        final coordsList = geojson['coordinates'] as List<dynamic>;
+        coordinates = coordsList.map((coord) {
+          final coordList = coord as List<dynamic>;
+          return GeoPoint(
+            coordList[1] as double, // latitude
+            coordList[0] as double, // longitude
+          );
+        }).toList();
+      }
+
+      final trip = Trip(
         id: const Uuid().v4(),
-        departureStation: fromStation['label'] as String,
-        arrivalStation: toStation['label'] as String,
+        departureStation:
+            fromStation['label'] as String? ?? fromStation['name'] as String,
+        arrivalStation:
+            toStation['label'] as String? ?? toStation['name'] as String,
         departureStationId: fromStation['id'] as String,
         arrivalStationId: toStation['id'] as String,
         departureCityName: fromAdminRegion['name'] as String,
@@ -493,14 +522,26 @@ class _AddTripScreenV3State extends State<AddTripScreenV3> {
         arrivalTime: DateTime.parse(journey['arrival_time'] as String),
         trainNumber: journey['train_number'] as String,
         trainType: journey['type'] as String,
-        distance: journey['distance'] as double,
+        distance: (journey['distance'] as num).toDouble(),
         price: 0,
         path: coordinates,
-      ),
-    );
-    if (mounted) {
-      Navigator.pop(context); // Fermer la bottom sheet
-      Navigator.pop(context); // Retourner à l'écran principal
+      );
+
+      await tripProvider.addTrip(trip);
+
+      if (mounted) {
+        Navigator.pop(context); // Fermer la bottom sheet
+        Navigator.pop(context); // Retourner à l'écran principal
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur lors de l\'ajout du trajet: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 

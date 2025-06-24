@@ -1,28 +1,35 @@
 import 'dart:convert';
 import 'dart:math' as math;
-import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
-import 'package:dio/dio.dart';
+import 'base_train_service.dart';
 
-class SncfService {
-  static const String _baseUrl = 'https://api.navitia.io/v1';
+class SncfService extends BaseTrainService {
+  @override
+  String get baseUrl => 'https://api.navitia.io/v1';
+
+  @override
+  String get apiKey => _apiKey;
+
+  @override
+  Map<String, String> get defaultHeaders => {
+        'Authorization': 'Basic ${base64Encode(utf8.encode('$_apiKey:'))}',
+      };
+
   final String _apiKey;
-  final Dio _dio = Dio();
 
   SncfService(this._apiKey);
 
-  Future<List<Map<String, dynamic>>> getStations(String query) async {
+  @override
+  Future<List<Map<String, dynamic>>> searchStations(String query) async {
     try {
-      final response = await _dio.get(
-        'https://api.sncf.com/v1/coverage/sncf/places?q=$query&type[]=stop_area&disable_geojson=true',
-        options: Options(
-          headers: {'Authorization': _apiKey},
-        ),
+      final response = await get(
+        '/coverage/sncf/places',
+        queryParameters: {
+          'q': query,
+          'type[]': 'stop_area',
+          'disable_geojson': 'true',
+        },
       );
-
-      if (response.statusCode != 200) {
-        return [];
-      }
 
       final data = response.data as Map<String, dynamic>;
       final places = data['places'] as List<dynamic>?;
@@ -52,108 +59,36 @@ class SncfService {
     }
   }
 
-  Future<List<Map<String, dynamic>>> getTrainInfo(
-    String trainNumber,
-    DateTime date,
-    String departureStationId,
-    String arrivalStationId,
-  ) async {
-    try {
-      final formattedDate =
-          '${date.year}${date.month.toString().padLeft(2, '0')}${date.day.toString().padLeft(2, '0')}';
-      final response = await http.get(
-        Uri.parse('$_baseUrl/coverage/sncf/journeys?'
-            'from=$departureStationId&'
-            'to=$arrivalStationId&'
-            'datetime=$formattedDate&'
-            'train_number=$trainNumber'),
-        headers: {'Authorization': _apiKey},
-      );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        final journeys = data['journeys'] as List;
-        return journeys.map((journey) {
-          final sections = journey['sections'] as List;
-          final firstSection = sections.first;
-          final lastSection = sections.last;
-
-          return {
-            'id': journey['id'],
-            'departure_station': firstSection['from']['name'],
-            'arrival_station': lastSection['to']['name'],
-            'departure_time': firstSection['departure_date_time'],
-            'arrival_time': lastSection['arrival_date_time'],
-            'duration': journey['duration'],
-            'type': firstSection['display_informations']['commercial_mode'],
-            'train_number': firstSection['display_informations']['headsign'],
-          };
-        }).toList();
-      } else {
-        throw Exception(
-            'Erreur lors de la récupération des informations du train: ${response.statusCode}');
-      }
-    } catch (e) {
-      throw Exception('Erreur de connexion: $e');
-    }
-  }
-
-  double _calculateDistance(
-      double lat1, double lon1, double lat2, double lon2) {
-    const double earthRadius = 6371; // Rayon de la Terre en kilomètres
-
-    // Convertir les degrés en radians
-    double dLat = _toRadians(lat2 - lat1);
-    double dLon = _toRadians(lon2 - lon1);
-
-    // Formule de Haversine
-    double a = math.sin(dLat / 2) * math.sin(dLat / 2) +
-        math.cos(_toRadians(lat1)) *
-            math.cos(_toRadians(lat2)) *
-            math.sin(dLon / 2) *
-            math.sin(dLon / 2);
-    double c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
-    double distance = earthRadius * c;
-
-    return distance;
-  }
-
-  double _toRadians(double degree) {
-    return degree * (math.pi / 180);
-  }
-
-  Future<List<Map<String, dynamic>>> searchJourneys(
-    String departureStationId,
-    String arrivalStationId,
-    DateTime date, {
-    Function(int count)? onJourneysAdded,
+  @override
+  Future<List<Map<String, dynamic>>> searchTrips({
+    required String departureStation,
+    required String arrivalStation,
+    required DateTime date,
   }) async {
+    validateSearchParams(
+      departureStation: departureStation,
+      arrivalStation: arrivalStation,
+      date: date,
+    );
+
     try {
       final dateStr = DateFormat('yyyyMMdd').format(date);
       final timeStr = DateFormat('HHmmss').format(date);
 
-      final url = '$_baseUrl/coverage/sncf/journeys'
-          '?from=$departureStationId'
-          '&to=$arrivalStationId'
-          '&datetime=$dateStr${timeStr}'
-          '&datetime_represents=departure'
-          '&count=50'
-          '&max_nb_transfers=0'
-          '&timeframe_duration=1';
-
-      final response = await http.get(
-        Uri.parse(url),
-        headers: {
-          'Authorization': 'Basic ${base64Encode(utf8.encode('$_apiKey:'))}',
+      final response = await get(
+        '/coverage/sncf/journeys',
+        queryParameters: {
+          'from': departureStation,
+          'to': arrivalStation,
+          'datetime': '$dateStr$timeStr',
+          'datetime_represents': 'departure',
+          'count': '50',
+          'max_nb_transfers': '0',
+          'timeframe_duration': '1',
         },
       );
 
-      if (response.statusCode != 200) {
-        throw Exception(
-            'Erreur lors de la recherche des trajets: ${response.statusCode}');
-      }
-
-      final data = json.decode(response.body);
+      final data = response.data as Map<String, dynamic>;
       final journeys = data['journeys'] as List? ?? [];
       final List<Map<String, dynamic>> allJourneys = [];
 
@@ -199,32 +134,117 @@ class SncfService {
             'distance': distance,
             'from': publicTransportSection['from'],
             'to': publicTransportSection['to'],
-            'geojson': publicTransportSection['geojson'],
           };
 
           allJourneys.add(journeyInfo);
-          onJourneysAdded?.call(allJourneys.length);
         } catch (e) {
-          // Continue to next journey if there's an error processing this one
+          // Continuer avec le prochain trajet en cas d'erreur
           continue;
         }
       }
 
       return allJourneys;
     } catch (e) {
+      throw Exception('Erreur lors de la recherche des trajets: $e');
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getTrainInfo(
+    String trainNumber,
+    DateTime date,
+    String departureStationId,
+    String arrivalStationId,
+  ) async {
+    try {
+      final formattedDate =
+          '${date.year}${date.month.toString().padLeft(2, '0')}${date.day.toString().padLeft(2, '0')}';
+
+      final response = await get(
+        '/coverage/sncf/journeys',
+        queryParameters: {
+          'from': departureStationId,
+          'to': arrivalStationId,
+          'datetime': formattedDate,
+          'train_number': trainNumber,
+        },
+      );
+
+      final data = response.data as Map<String, dynamic>;
+      final journeys = data['journeys'] as List;
+      return journeys.map((journey) {
+        final sections = journey['sections'] as List;
+        final firstSection = sections.first;
+        final lastSection = sections.last;
+
+        return {
+          'id': journey['id'],
+          'departure_station': firstSection['from']['name'],
+          'arrival_station': lastSection['to']['name'],
+          'departure_time': firstSection['departure_date_time'],
+          'arrival_time': lastSection['arrival_date_time'],
+          'duration': journey['duration'],
+          'type': firstSection['display_informations']['commercial_mode'],
+          'train_number': firstSection['display_informations']['headsign'],
+        };
+      }).toList();
+    } catch (e) {
       throw Exception('Erreur de connexion: $e');
     }
   }
 
-  Future<Map<String, dynamic>> getStationDetails(String stationId) async {
-    final response = await _dio.get(
-      'https://api.sncf.com/v1/coverage/sncf/stop_areas/$stationId',
-      options: Options(
-        headers: {'Authorization': _apiKey},
-      ),
+  double _calculateDistance(
+      double lat1, double lon1, double lat2, double lon2) {
+    const double earthRadius = 6371; // Rayon de la Terre en kilomètres
+
+    // Convertir les degrés en radians
+    double dLat = _toRadians(lat2 - lat1);
+    double dLon = _toRadians(lon2 - lon1);
+
+    // Formule de Haversine
+    double a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(_toRadians(lat1)) *
+            math.cos(_toRadians(lat2)) *
+            math.sin(dLon / 2) *
+            math.sin(dLon / 2);
+    double c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
+    double distance = earthRadius * c;
+
+    return distance;
+  }
+
+  double _toRadians(double degree) {
+    return degree * (math.pi / 180);
+  }
+
+  // Méthodes de compatibilité pour les écrans existants
+  Future<List<Map<String, dynamic>>> getStations(String query) async {
+    return searchStations(query);
+  }
+
+  Future<List<Map<String, dynamic>>> searchJourneys(
+    String departureStationId,
+    String arrivalStationId,
+    DateTime date, {
+    Function(int count)? onJourneysAdded,
+  }) async {
+    final trips = await searchTrips(
+      departureStation: departureStationId,
+      arrivalStation: arrivalStationId,
+      date: date,
     );
 
-    if (response.statusCode == 200) {
+    // Appeler le callback pour chaque trajet ajouté
+    for (int i = 0; i < trips.length; i++) {
+      onJourneysAdded?.call(i + 1);
+    }
+
+    return trips;
+  }
+
+  Future<Map<String, dynamic>> getStationDetails(String stationId) async {
+    try {
+      final response = await get('/coverage/sncf/stop_areas/$stationId');
+
       final stopArea = response.data['stop_areas'][0];
       final adminRegions = stopArea['administrative_regions'] ?? [];
       final cityName =
@@ -238,7 +258,7 @@ class SncfService {
           'lon': double.parse(stopArea['coord']['lon'].toString()),
         },
       };
-    } else {
+    } catch (e) {
       throw Exception('Erreur lors de la récupération des détails de la gare');
     }
   }
