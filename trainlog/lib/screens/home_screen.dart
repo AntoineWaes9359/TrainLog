@@ -132,7 +132,7 @@ class _HomeScreenState extends State<HomeScreen> {
     Widget iconWidget = Icon(
       icon,
       color: color,
-      size: 29,
+      size: 30,
     );
 
     // Si l'élément est sélectionné, l'entourer avec un fond vert simple
@@ -140,12 +140,19 @@ class _HomeScreenState extends State<HomeScreen> {
     return InkWell(
       onTap: () => setState(() => _selectedIndex = index),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+        padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 2),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             iconWidget,
-            const SizedBox(height: 8),
+            /* const SizedBox(height: 2),
+            Text(
+              label,
+              style: AppTypography.labelSmall.copyWith(
+                color: color,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+              ),
+            ), */
           ],
         ),
       ),
