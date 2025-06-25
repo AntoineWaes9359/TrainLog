@@ -1,6 +1,10 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'dart:math';
+import '/l10n/app_localizations.dart';
+import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 import '../theme/colors.dart';
 import '../theme/typography.dart';
 import 'upcoming_screen.dart';
@@ -58,38 +62,55 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Stack(
           alignment: Alignment.bottomCenter,
           children: [
-            Container(
-              height: 60,
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                borderRadius: BorderRadius.circular(32),
-                boxShadow: [
-                  BoxShadow(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withOpacity(0.07),
-                    blurRadius: 20,
-                    offset: const Offset(0, 4),
+            // Contenu de fond (pour que l'effet glass soit visible)
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Theme.of(context).colorScheme.surface.withOpacity(0.1),
+                      Theme.of(context).colorScheme.surface.withOpacity(0.3),
+                    ],
                   ),
-                ],
+                ),
               ),
-              child: Row(
-                children: [
-                  Expanded(
-                      child: _buildNavItem(
-                          0, Icons.explore_outlined, l10n.navigationTrips)),
-                  Expanded(
-                      child: _buildNavItem(
-                          1, Icons.history, l10n.navigationHistory)),
-                  const Expanded(child: SizedBox()),
-                  Expanded(
-                      child: _buildNavItem(
-                          2, Icons.leaderboard_outlined, l10n.navigationStats)),
-                  Expanded(
-                      child: _buildNavItem(
-                          3, Icons.person_outline, l10n.navigationProfile)),
-                ],
+            ),
+            // Effet Liquid Glass pour la barre de navigation
+            LiquidGlass(
+              shape: LiquidRoundedSuperellipse(
+                borderRadius: Radius.circular(32),
+              ),
+              settings: LiquidGlassSettings(
+                ambientStrength: 2,
+                lightAngle: 100 * math.pi,
+                lightIntensity: 1,
+                chromaticAberration: 2,
+                glassColor:
+                    Theme.of(context).colorScheme.background.withOpacity(0.1),
+                blur: 1.5,
+                thickness: 11,
+              ),
+              child: Container(
+                height: 60,
+                child: Row(
+                  children: [
+                    Expanded(
+                        child: _buildNavItem(
+                            0, Icons.explore_outlined, l10n.navigationTrips)),
+                    Expanded(
+                        child: _buildNavItem(
+                            1, Icons.history, l10n.navigationHistory)),
+                    const Expanded(child: SizedBox()),
+                    Expanded(
+                        child: _buildNavItem(2, Icons.leaderboard_outlined,
+                            l10n.navigationStats)),
+                    Expanded(
+                        child: _buildNavItem(
+                            3, Icons.person_outline, l10n.navigationProfile)),
+                  ],
+                ),
               ),
             ),
             const Positioned(
@@ -107,25 +128,26 @@ class _HomeScreenState extends State<HomeScreen> {
     final color = isSelected
         ? Theme.of(context).colorScheme.primary
         : Theme.of(context).colorScheme.onSurface;
+
+    Widget iconWidget = Icon(
+      icon,
+      color: color,
+      size: 29,
+    );
+
+    // Si l'élément est sélectionné, l'entourer avec un fond vert simple
+
     return InkWell(
       onTap: () => setState(() => _selectedIndex = index),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            icon,
-            color: color,
-            size: 24,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: AppTypography.labelSmall.copyWith(
-              color: color,
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-            ),
-          ),
-        ],
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            iconWidget,
+            const SizedBox(height: 8),
+          ],
+        ),
       ),
     );
   }

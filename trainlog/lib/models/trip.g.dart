@@ -6,12 +6,6 @@ part of 'trip.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-GeoPointConverter _$GeoPointConverterFromJson(Map<String, dynamic> json) =>
-    GeoPointConverter();
-
-Map<String, dynamic> _$GeoPointConverterToJson(GeoPointConverter instance) =>
-    <String, dynamic>{};
-
 Trip _$TripFromJson(Map<String, dynamic> json) => Trip(
       id: json['id'] as String,
       departureStation: json['departureStation'] as String,

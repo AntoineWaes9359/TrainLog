@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:trainlog/theme/app_theme.dart';
 import 'package:trainlog/theme/typography.dart';
 import '../providers/auth_provider.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import '/l10n/app_localizations.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -22,12 +22,12 @@ class ProfileScreen extends StatelessWidget {
             backgroundColor: Theme.of(context).colorScheme.background,
             pinned: true,
             elevation: 0,
-            expandedHeight: 120,
+            expandedHeight: 100,
             flexibleSpace: FlexibleSpaceBar(
               titlePadding: const EdgeInsets.only(left: 24, bottom: 16),
               title: Text(
                 l10n.profileTitle,
-                style: AppTypography.displaySmall.copyWith(
+                style: AppTypography.displayMedium.copyWith(
                     color: Theme.of(context).colorScheme.onBackground),
               ),
               centerTitle: false,

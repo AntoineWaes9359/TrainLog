@@ -35,7 +35,7 @@ class AppTypography {
 
   /// Style pour les titres moyens
   static TextStyle get displayMedium => GoogleFonts.nunito(
-        fontSize: 28,
+        fontSize: 20,
         fontWeight: FontWeight.w700,
         letterSpacing: -0.25,
         height: 1.3,

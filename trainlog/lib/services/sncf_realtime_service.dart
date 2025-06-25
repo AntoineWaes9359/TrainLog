@@ -83,9 +83,20 @@ class SncfRealtimeService {
       // Les perturbations sont directement dans le champ disruptions à la racine
       final disruptions = data['disruptions'] as List?;
 
-      // Si pas de perturbations, retourner null
+      // Si pas de perturbations, retourner une structure indiquant que tout va bien
       if (disruptions == null || disruptions.isEmpty) {
-        return null;
+        return {
+          'hasDisruption': false,
+          'message': 'Aucune perturbation signalée',
+          'disruptionType': 'on_time',
+          'severity': 'normal',
+          'severityEffect': 'normal_service',
+          'cause': '',
+          'delayMinutes': 0,
+          'hasDeletedStops': false,
+          'isFullyCancelled': false,
+          'impacted_objects': [],
+        };
       }
 
       // Analyser la première perturbation

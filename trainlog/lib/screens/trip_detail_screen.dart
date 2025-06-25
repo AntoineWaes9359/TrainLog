@@ -16,8 +16,7 @@ import 'package:trainlog/widgets/train_logo.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:trainlog/theme/typography.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:trainlog/widgets/carbon_footprint_card.dart';
+import '/l10n/app_localizations.dart';
 import 'package:trainlog/services/sncf_realtime_service.dart';
 import 'package:trainlog/widgets/common/info_card.dart';
 import 'package:trainlog/widgets/disruption_details_modal.dart';
@@ -137,6 +136,8 @@ class _TripDetailScreenState extends State<TripDetailScreen>
   /// Obtient le titre de la perturbation
   String _getDisruptionTitle(String disruptionType) {
     switch (disruptionType) {
+      case 'on_time':
+        return 'À l\'heure';
       case 'blocking':
         return 'Trajet bloqué';
       case 'delayed':
@@ -151,6 +152,13 @@ class _TripDetailScreenState extends State<TripDetailScreen>
 
   /// Obtient la description de la perturbation
   String _getDisruptionDescription(Map<String, dynamic> disruptionInfo) {
+    final disruptionType = disruptionInfo['disruptionType'] as String?;
+
+    // Si le train est à l'heure, retourner un message positif
+    if (disruptionType == 'on_time') {
+      return 'Votre train circule normalement sans perturbation';
+    }
+
     final delayMinutes = disruptionInfo['delayMinutes'] as int?;
     final cause = disruptionInfo['cause'] as String?;
     final hasDeletedStops = disruptionInfo['hasDeletedStops'] as bool?;
@@ -178,6 +186,8 @@ class _TripDetailScreenState extends State<TripDetailScreen>
   /// Obtient l'icône de la perturbation
   IconData _getDisruptionIcon(String disruptionType) {
     switch (disruptionType) {
+      case 'on_time':
+        return Icons.check_circle;
       case 'blocking':
         return Icons.block;
       case 'delayed':
@@ -193,6 +203,8 @@ class _TripDetailScreenState extends State<TripDetailScreen>
   /// Obtient la couleur de l'icône
   Color _getDisruptionColor(String disruptionType) {
     switch (disruptionType) {
+      case 'on_time':
+        return Colors.green;
       case 'blocking':
         return Colors.red;
       case 'delayed':
@@ -208,6 +220,8 @@ class _TripDetailScreenState extends State<TripDetailScreen>
   /// Obtient la couleur de fond
   Color _getDisruptionBackgroundColor(String disruptionType) {
     switch (disruptionType) {
+      case 'on_time':
+        return Colors.green.withOpacity(0.1);
       case 'blocking':
         return Colors.red.withOpacity(0.1);
       case 'delayed':
@@ -495,7 +509,7 @@ class _TripDetailScreenState extends State<TripDetailScreen>
             myLocationButtonEnabled: false,
             scrollGesturesEnabled: true,
             zoomGesturesEnabled: true,
-            rotateGesturesEnabled: true,
+            rotateGesturesEnabled: false,
             gestureRecognizers: {
               Factory<OneSequenceGestureRecognizer>(
                 () => EagerGestureRecognizer(),
@@ -566,7 +580,7 @@ class _TripDetailScreenState extends State<TripDetailScreen>
           ),
           SliverToBoxAdapter(
             child: Container(
-              padding: const EdgeInsets.all(0.0),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.background,
                 borderRadius: const BorderRadius.only(
@@ -583,73 +597,86 @@ class _TripDetailScreenState extends State<TripDetailScreen>
                   const SizedBox(height: 24),
                   // Informations en temps réel (si disponibles)
                   if (shouldShowRealtime && _realtimeInfo != null)
-                    InfoCard(
-                      title: _getDisruptionTitle(
-                          _realtimeInfo!['disruptionType'] as String),
-                      subtitle: _realtimeInfo!['message'] as String,
-                      description: _getDisruptionDescription(_realtimeInfo!),
-                      icon: _getDisruptionIcon(
-                          _realtimeInfo!['disruptionType'] as String),
-                      iconColor: _getDisruptionColor(
-                          _realtimeInfo!['disruptionType'] as String),
-                      backgroundColor: _getDisruptionBackgroundColor(
-                          _realtimeInfo!['disruptionType'] as String),
-                      borderColor: _getDisruptionColor(
-                              _realtimeInfo!['disruptionType'] as String)
-                          .withOpacity(0.3),
-                      titleColor: _getDisruptionColor(
-                          _realtimeInfo!['disruptionType'] as String),
-                      subtitleColor: Theme.of(context).colorScheme.onSurface,
-                      descriptionColor: _getDisruptionColor(
-                          _realtimeInfo!['disruptionType'] as String),
-                      onTap: _showDisruptionDetails,
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 0, vertical: 8),
+                      child: InfoCard(
+                        title: _getDisruptionTitle(
+                            _realtimeInfo!['disruptionType'] as String),
+                        subtitle: _realtimeInfo!['message'] as String,
+                        description: _getDisruptionDescription(_realtimeInfo!),
+                        icon: _getDisruptionIcon(
+                            _realtimeInfo!['disruptionType'] as String),
+                        iconColor: _getDisruptionColor(
+                            _realtimeInfo!['disruptionType'] as String),
+                        backgroundColor: _getDisruptionBackgroundColor(
+                            _realtimeInfo!['disruptionType'] as String),
+                        borderColor: _getDisruptionColor(
+                                _realtimeInfo!['disruptionType'] as String)
+                            .withOpacity(0.3),
+                        titleColor: _getDisruptionColor(
+                            _realtimeInfo!['disruptionType'] as String),
+                        subtitleColor: Theme.of(context).colorScheme.onSurface,
+                        descriptionColor: _getDisruptionColor(
+                            _realtimeInfo!['disruptionType'] as String),
+                        onTap: _realtimeInfo!['hasDisruption'] == true
+                            ? _showDisruptionDetails
+                            : null,
+                      ),
                     ),
                   if (shouldShowRealtime && _isLoadingRealtime)
-                    Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Row(
-                          children: [
-                            const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                'Vérification des informations en temps réel...',
-                                overflow: TextOverflow.ellipsis,
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 0, vertical: 8),
+                      child: Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            children: [
+                              const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  'Vérification des informations en temps réel...',
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
                   if (shouldShowRealtime && _realtimeError != null)
-                    Card(
-                      margin: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 8),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.error_outline,
-                                color: Colors.orange),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                _realtimeError!,
-                                style: AppTypography.bodyMedium
-                                    .copyWith(color: Colors.orange),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 0, vertical: 8),
+                      child: Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.error_outline,
+                                  color: Colors.orange),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  _realtimeError!,
+                                  style: AppTypography.bodyMedium
+                                      .copyWith(color: Colors.orange),
+                                ),
                               ),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.refresh, size: 20),
-                              onPressed: _refreshRealtimeInfo,
-                              color: Colors.orange,
-                            ),
-                          ],
+                              IconButton(
+                                icon: const Icon(Icons.refresh, size: 20),
+                                onPressed: _refreshRealtimeInfo,
+                                color: Colors.orange,
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -657,17 +684,31 @@ class _TripDetailScreenState extends State<TripDetailScreen>
                       shouldShowRealtime && _isLoadingRealtime ||
                       shouldShowRealtime && _realtimeError != null)
                     const SizedBox(height: 24),
-                  if (shouldShowRealtime) _buildCountdownCard(l10n),
+                  //if (shouldShowRealtime) _buildCountdownCard(l10n),
                   if (shouldShowRealtime) const SizedBox(height: 24),
                   _buildJourneyInfoCard(l10n),
+
                   const SizedBox(height: 16),
-                  _buildTicketInfoCard(l10n),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: _buildTicketInfoCard(l10n),
+                  ),
                   const SizedBox(height: 16),
-                  _buildCarbonFootprintCard(l10n),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: _buildCarbonFootprintCard(l10n),
+                  ),
                   const SizedBox(height: 16),
-                  _buildTripStatsCard(l10n),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: _buildTripStatsCard(l10n),
+                  ),
                   const SizedBox(height: 24),
-                  _buildDeleteButton(l10n),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: _buildDeleteButton(l10n),
+                  ),
+                  const SizedBox(height: 24),
                 ],
               ),
             ),
@@ -679,11 +720,11 @@ class _TripDetailScreenState extends State<TripDetailScreen>
 
   Widget _buildHeader() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      padding: const EdgeInsets.symmetric(vertical: 16),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          TrainLogo(trainType: trip.trainType, size: 40),
+          TrainLogo(trainType: trip.trainType, size: 16),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
@@ -719,7 +760,7 @@ class _TripDetailScreenState extends State<TripDetailScreen>
 
   Widget _buildTripTimeline() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(vertical: 0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -884,93 +925,101 @@ class _TripDetailScreenState extends State<TripDetailScreen>
   }
 
   Widget _buildJourneyInfoCard(AppLocalizations l10n) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.route,
-                  color: Theme.of(context).colorScheme.primary,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Informations du trajet',
-                  style: AppTypography.headlineSmall.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            _buildInfoRow('Distance', '${trip.distance.toStringAsFixed(0)} km'),
-            _buildInfoRow('Durée', trip.formattedDuration),
-            _buildInfoRow(
-                'Prix',
-                trip.price > 0
-                    ? '${trip.price.toStringAsFixed(2)} €'
-                    : 'Non renseigné'),
-            if (trip.company != null && trip.company!.isNotEmpty)
-              _buildInfoRow('Compagnie', trip.company!),
-            if (trip.brand != null && trip.brand!.isNotEmpty)
-              _buildInfoRow('Marque', trip.brand!),
-            if (trip.notes != null && trip.notes!.isNotEmpty)
-              _buildInfoRow('Notes', trip.notes!),
-          ],
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Theme.of(context).dividerColor.withOpacity(0.08),
+          width: 1,
         ),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.route,
+                color: Theme.of(context).colorScheme.primary,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Informations du trajet',
+                style: AppTypography.headlineSmall.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _buildInfoRow('Distance', '${trip.distance.toStringAsFixed(0)} km'),
+          _buildInfoRow('Durée', trip.formattedDuration),
+          _buildInfoRow(
+              'Prix',
+              trip.price > 0
+                  ? '${trip.price.toStringAsFixed(2)} €'
+                  : 'Non renseigné'),
+          if (trip.company != null && trip.company!.isNotEmpty)
+            _buildInfoRow('Compagnie', trip.company!),
+          if (trip.brand != null && trip.brand!.isNotEmpty)
+            _buildInfoRow('Marque', trip.brand!),
+          if (trip.notes != null && trip.notes!.isNotEmpty)
+            _buildInfoRow('Notes', trip.notes!),
+        ],
       ),
     );
   }
 
   Widget _buildTicketInfoCard(AppLocalizations l10n) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.confirmation_number,
-                  color: Theme.of(context).colorScheme.primary,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Informations du billet',
-                  style: AppTypography.headlineSmall.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            _buildEditableInfoRow(
-              'Numéro de billet',
-              _ticketNumber.isEmpty ? 'Non renseigné' : _ticketNumber,
-              Icons.copy,
-              () => _copyToClipboard(_ticketNumber),
-              isEnabled: _ticketNumber.isNotEmpty,
-            ),
-            _buildEditableInfoRow(
-              'Siège',
-              _seatNumber.isEmpty ? 'Non renseigné' : _seatNumber,
-              Icons.edit,
-              _editSeat,
-            ),
-            _buildInfoRow('Voiture', trip.carNumber ?? 'Non renseigné'),
-            _buildInfoRow('Classe', trip.travelClass ?? 'Non renseigné'),
-          ],
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Theme.of(context).dividerColor.withOpacity(0.08),
+          width: 1,
         ),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.confirmation_number,
+                color: Theme.of(context).colorScheme.primary,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Informations du billet',
+                style: AppTypography.headlineSmall.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _buildEditableInfoRow(
+            'Numéro de billet',
+            _ticketNumber.isEmpty ? 'Non renseigné' : _ticketNumber,
+            Icons.copy,
+            () => _copyToClipboard(_ticketNumber),
+            isEnabled: _ticketNumber.isNotEmpty,
+          ),
+          _buildEditableInfoRow(
+            'Siège',
+            _seatNumber.isEmpty ? 'Non renseigné' : _seatNumber,
+            Icons.edit,
+            _editSeat,
+          ),
+          _buildInfoRow('Voiture', trip.carNumber ?? 'Non renseigné'),
+          _buildInfoRow('Classe', trip.travelClass ?? 'Non renseigné'),
+        ],
       ),
     );
   }
@@ -988,127 +1037,130 @@ class _TripDetailScreenState extends State<TripDetailScreen>
         (trainFootprint / 0.05).round(); // 1 charge = ~0.05kg CO2
     final kmEnVoiture = (trainFootprint / 0.21).round();
 
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Theme.of(context).dividerColor.withOpacity(0.08),
+          width: 1,
+        ),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.eco,
+                color: Theme.of(context).colorScheme.primary,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Impact environnemental',
+                style: AppTypography.headlineSmall.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Empreinte carbone',
+                      style: AppTypography.bodyMedium.copyWith(
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${trainFootprint.toStringAsFixed(1)} kg CO₂',
+                      style: AppTypography.headlineSmall.copyWith(
+                        color: Theme.of(context).colorScheme.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
                   Icons.eco,
                   color: Theme.of(context).colorScheme.primary,
-                  size: 20,
+                  size: 24,
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  'Impact environnemental',
-                  style: AppTypography.headlineSmall.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
-                ),
-              ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _buildInfoRow('Équivalent voiture',
+              '${carFootprint.toStringAsFixed(1)} kg CO₂'),
+          _buildInfoRow('Équivalent avion',
+              '${planeFootprint.toStringAsFixed(1)} kg CO₂'),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+              ),
             ),
-            const SizedBox(height: 12),
-            Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Empreinte carbone',
-                        style: AppTypography.bodyMedium.copyWith(
-                          color: Theme.of(context).colorScheme.onSurface,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${trainFootprint.toStringAsFixed(1)} kg CO₂',
-                        style: AppTypography.headlineSmall.copyWith(
-                          color: Theme.of(context).colorScheme.primary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
+                Text(
+                  'Cela correspond à :',
+                  style: AppTypography.bodySmall.copyWith(
+                    color: Theme.of(context).colorScheme.primary,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color:
-                        Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
+                const SizedBox(height: 4),
+                Text(
+                  '• ${treesNeeded} arbre(s) pour absorber ce CO₂ en 1 an',
+                  style: AppTypography.bodySmall.copyWith(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withOpacity(0.8),
                   ),
-                  child: Icon(
-                    Icons.eco,
-                    color: Theme.of(context).colorScheme.primary,
-                    size: 24,
+                ),
+                Text(
+                  '• ${smartphoneCharges} charge(s) de smartphone',
+                  style: AppTypography.bodySmall.copyWith(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withOpacity(0.8),
+                  ),
+                ),
+                Text(
+                  '• ${kmEnVoiture} km en voiture',
+                  style: AppTypography.bodySmall.copyWith(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withOpacity(0.8),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            _buildInfoRow('Équivalent voiture',
-                '${carFootprint.toStringAsFixed(1)} kg CO₂'),
-            _buildInfoRow('Équivalent avion',
-                '${planeFootprint.toStringAsFixed(1)} kg CO₂'),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Cela correspond à :',
-                    style: AppTypography.bodySmall.copyWith(
-                      color: Theme.of(context).colorScheme.primary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '• ${treesNeeded} arbre(s) pour absorber ce CO₂ en 1 an',
-                    style: AppTypography.bodySmall.copyWith(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onSurface
-                          .withOpacity(0.8),
-                    ),
-                  ),
-                  Text(
-                    '• ${smartphoneCharges} charge(s) de smartphone',
-                    style: AppTypography.bodySmall.copyWith(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onSurface
-                          .withOpacity(0.8),
-                    ),
-                  ),
-                  Text(
-                    '• ${kmEnVoiture} km en voiture',
-                    style: AppTypography.bodySmall.copyWith(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onSurface
-                          .withOpacity(0.8),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -1143,41 +1195,44 @@ class _TripDetailScreenState extends State<TripDetailScreen>
             .where((t) => t.price > 0)
             .length;
 
-        return Card(
-          elevation: 2,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.analytics,
-                      color: Theme.of(context).colorScheme.primary,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Statistiques de cette route',
-                      style: AppTypography.headlineSmall.copyWith(
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                _buildInfoRow('Effectué', '$sameRouteTrips fois'),
-                _buildInfoRow('Distance totale',
-                    '${sameRouteDistance.toStringAsFixed(0)} km'),
-                if (priceCount > 0)
-                  _buildInfoRow('Prix moyen',
-                      '${(avgPrice / priceCount).toStringAsFixed(2)} €'),
-                _buildInfoRow('Dernière fois', _getLastTripDate(allTrips)),
-              ],
+        return Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: Theme.of(context).dividerColor.withOpacity(0.08),
+              width: 1,
             ),
+          ),
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.analytics,
+                    color: Theme.of(context).colorScheme.primary,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Statistiques de cette route',
+                    style: AppTypography.headlineSmall.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              _buildInfoRow('Effectué', '$sameRouteTrips fois'),
+              _buildInfoRow('Distance totale',
+                  '${sameRouteDistance.toStringAsFixed(0)} km'),
+              if (priceCount > 0)
+                _buildInfoRow('Prix moyen',
+                    '${(avgPrice / priceCount).toStringAsFixed(2)} €'),
+              _buildInfoRow('Dernière fois', _getLastTripDate(allTrips)),
+            ],
           ),
         );
       },

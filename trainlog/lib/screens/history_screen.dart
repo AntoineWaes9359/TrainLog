@@ -10,7 +10,7 @@ import 'dart:io' show Platform;
 import 'package:trainlog/screens/trip_detail_screen.dart';
 import 'package:trainlog/widgets/train_logo.dart';
 import 'package:trainlog/theme/typography.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import '/l10n/app_localizations.dart';
 import 'package:trainlog/utils/date_formatter.dart';
 import 'package:trainlog/widgets/common/time_station_block.dart';
 
@@ -150,7 +150,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         ),
                         child: Text(
                           l10n.historyTitle,
-                          style: AppTypography.displaySmall.copyWith(
+                          style: AppTypography.displayMedium.copyWith(
                             color: Theme.of(context).colorScheme.onSurface,
                             fontWeight: FontWeight.w600,
                           ),

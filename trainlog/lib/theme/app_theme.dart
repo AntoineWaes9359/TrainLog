@@ -17,7 +17,7 @@ class AppTheme {
       primaryTextTheme: AppTypography.displayTextTheme,
 
       // ===== CARTES =====
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         elevation: 2,
         shadowColor: AppColors.black.withOpacity(0.1),
         shape: RoundedRectangleBorder(
@@ -125,7 +125,7 @@ class AppTheme {
       ),
 
       // ===== DIALOG =====
-      dialogTheme: DialogTheme(
+      dialogTheme: DialogThemeData(
         elevation: 8,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
@@ -189,7 +189,7 @@ class AppTheme {
       ),
 
       // ===== CARTES =====
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         elevation: 2,
         shadowColor: AppColors.black.withOpacity(0.1),
         shape: RoundedRectangleBorder(
@@ -297,7 +297,7 @@ class AppTheme {
       ),
 
       // ===== DIALOG =====
-      dialogTheme: DialogTheme(
+      dialogTheme: DialogThemeData(
         elevation: 8,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),

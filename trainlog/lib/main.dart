@@ -5,10 +5,10 @@ import 'package:provider/provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:adaptive_theme/adaptive_theme.dart';
 
 import 'config/app_config.dart';
+import 'l10n/app_localizations.dart';
 import 'providers/auth_provider.dart';
 import 'providers/trip_provider_improved.dart';
 import 'screens/auth_wrapper.dart';

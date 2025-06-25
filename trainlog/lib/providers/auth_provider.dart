@@ -5,7 +5,6 @@ import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 class AuthProvider with ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
   User? _user;
 
   User? get user => _user;
@@ -23,14 +22,26 @@ class AuthProvider with ChangeNotifier {
 
   Future<void> signInWithGoogle() async {
     try {
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      // Initialiser Google Sign In
+      await GoogleSignIn.instance.initialize();
+
+      // Authentifier avec Google
+      final GoogleSignInAccount? googleUser =
+          await GoogleSignIn.instance.authenticate();
       if (googleUser == null) return;
 
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
+      // Obtenir les headers d'autorisation pour Firebase
+      final Map<String, String>? headers =
+          await googleUser.authorizationClient.authorizationHeaders([]);
+
+      if (headers == null) {
+        throw Exception('Impossible d\'obtenir les headers d\'autorisation');
+      }
+
+      // Créer les credentials pour Firebase
       final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
+        accessToken: headers['Authorization']?.replaceFirst('Bearer ', ''),
+        idToken: headers['X-Goog-ID-Token'],
       );
 
       await _auth.signInWithCredential(credential);
@@ -63,7 +74,7 @@ class AuthProvider with ChangeNotifier {
   }
 
   Future<void> signOut() async {
-    await _googleSignIn.signOut();
+    await GoogleSignIn.instance.disconnect();
     await _auth.signOut();
   }
 

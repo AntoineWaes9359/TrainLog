@@ -10,7 +10,7 @@ import 'dart:async';
 import 'package:flutter/services.dart';
 import '../widgets/common/time_station_block.dart';
 import '../widgets/common/info_card.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import '/l10n/app_localizations.dart';
 import '../utils/date_formatter.dart';
 
 class UpcomingScreen extends StatefulWidget {
@@ -91,12 +91,12 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
                   backgroundColor: Theme.of(context).colorScheme.background,
                   pinned: true,
                   elevation: 0,
-                  expandedHeight: 120,
+                  expandedHeight: 100,
                   flexibleSpace: FlexibleSpaceBar(
                     titlePadding: const EdgeInsets.only(left: 24, bottom: 16),
                     title: Text(
                       l10n.upcomingTitle,
-                      style: AppTypography.displaySmall.copyWith(
+                      style: AppTypography.displayMedium.copyWith(
                         color: Theme.of(context).colorScheme.onBackground,
                       ),
                     ),

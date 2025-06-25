@@ -4,7 +4,6 @@ import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
 
   Future<UserCredential?> signInWithApple() async {
     try {
@@ -27,6 +26,51 @@ class AuthService {
     } catch (e) {
       print('Erreur lors de la connexion avec Apple: $e');
       return null;
+    }
+  }
+
+  Future<UserCredential?> signInWithGoogle() async {
+    try {
+      // Initialiser Google Sign In
+      await GoogleSignIn.instance.initialize();
+
+      // Authentifier avec Google
+      final GoogleSignInAccount? googleUser =
+          await GoogleSignIn.instance.authenticate();
+
+      if (googleUser == null) {
+        return null;
+      }
+
+      // Obtenir les headers d'autorisation pour Firebase
+      final Map<String, String>? headers =
+          await googleUser.authorizationClient.authorizationHeaders([]);
+
+      if (headers == null) {
+        print('Impossible d\'obtenir les headers d\'autorisation');
+        return null;
+      }
+
+      // Créer les credentials pour Firebase
+      final credential = GoogleAuthProvider.credential(
+        accessToken: headers['Authorization']?.replaceFirst('Bearer ', ''),
+        idToken: headers['X-Goog-ID-Token'],
+      );
+
+      // Se connecter à Firebase
+      return await _auth.signInWithCredential(credential);
+    } catch (e) {
+      print('Erreur lors de la connexion avec Google: $e');
+      return null;
+    }
+  }
+
+  Future<void> signOut() async {
+    try {
+      await _auth.signOut();
+      await GoogleSignIn.instance.disconnect();
+    } catch (e) {
+      print('Erreur lors de la déconnexion: $e');
     }
   }
 }
