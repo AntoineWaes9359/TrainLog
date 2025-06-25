@@ -2,11 +2,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'dart:math';
 import '/l10n/app_localizations.dart';
 import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
-import '../theme/colors.dart';
-import '../theme/typography.dart';
 import 'upcoming_screen.dart';
 import 'history_screen.dart';
 import 'stats_screen.dart';
@@ -70,8 +67,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Theme.of(context).colorScheme.surface.withOpacity(0.1),
-                      Theme.of(context).colorScheme.surface.withOpacity(0.3),
+                      Theme.of(context)
+                          .colorScheme
+                          .surface
+                          .withValues(alpha: 0.1),
+                      Theme.of(context)
+                          .colorScheme
+                          .surface
+                          .withValues(alpha: 0.3),
                     ],
                   ),
                 ),
@@ -87,8 +90,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 lightAngle: 100 * math.pi,
                 lightIntensity: 1,
                 chromaticAberration: 2,
-                glassColor:
-                    Theme.of(context).colorScheme.background.withOpacity(0.1),
+                glassColor: Theme.of(context)
+                    .colorScheme
+                    .surface
+                    .withValues(alpha: 0.5),
                 blur: 1.5,
                 thickness: 11,
               ),

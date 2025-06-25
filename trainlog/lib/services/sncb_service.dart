@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -9,10 +8,9 @@ import '../services/ticket_scanner_service.dart';
 import '../utils/distance_calculator.dart';
 
 class SncbService implements TrainCompanyService {
-  final String _apiKey;
   final _ticketScanner = TicketScannerService();
 
-  SncbService(this._apiKey);
+  SncbService();
 
   @override
   String get companyName => 'SNCB';

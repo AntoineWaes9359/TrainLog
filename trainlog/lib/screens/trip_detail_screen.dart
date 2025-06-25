@@ -1,8 +1,6 @@
 import 'package:flip_board/flip_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/rendering.dart';
-import 'dart:ui';
 import 'package:intl/intl.dart';
 import 'dart:math';
 import 'package:trainlog/models/trip.dart';
@@ -37,7 +35,6 @@ class _TripDetailScreenState extends State<TripDetailScreen>
   late String _seatNumber;
   late AnimationController _trainAnimationController;
   late Animation<double> _trainAnimation;
-  late List<Color> _flipEndColors;
 
   // Variables pour les informations en temps réel
   Map<String, dynamic>? _realtimeInfo;
@@ -75,10 +72,6 @@ class _TripDetailScreenState extends State<TripDetailScreen>
   void didChangeDependencies() {
     super.didChangeDependencies();
     // Mettre à jour les couleurs du flip board selon le thème
-    _flipEndColors = [
-      Theme.of(context).colorScheme.background,
-      Theme.of(context).colorScheme.primary.withOpacity(0.1)
-    ];
   }
 
   @override
@@ -221,16 +214,16 @@ class _TripDetailScreenState extends State<TripDetailScreen>
   Color _getDisruptionBackgroundColor(String disruptionType) {
     switch (disruptionType) {
       case 'on_time':
-        return Colors.green.withOpacity(0.1);
+        return Colors.green.withValues(alpha: 0.1);
       case 'blocking':
-        return Colors.red.withOpacity(0.1);
+        return Colors.red.withValues(alpha: 0.1);
       case 'delayed':
-        return Colors.orange.withOpacity(0.1);
+        return Colors.orange.withValues(alpha: 0.1);
       case 'reduced':
-        return Colors.amber.withOpacity(0.1);
+        return Colors.amber.withValues(alpha: 0.1);
       case 'info':
       default:
-        return Colors.blue.withOpacity(0.1);
+        return Colors.blue.withValues(alpha: 0.1);
     }
   }
 
@@ -244,18 +237,6 @@ class _TripDetailScreenState extends State<TripDetailScreen>
         duration: const Duration(seconds: 2),
       ),
     );
-  }
-
-  Future<void> _pasteFromClipboard() async {
-    final clipboardData = await Clipboard.getData('text/plain');
-    if (clipboardData?.text != null && mounted) {
-      final tripProvider = context.read<TripProvider>();
-      setState(() {
-        _ticketNumber = clipboardData!.text!;
-      });
-      final updatedTrip = trip.copyWith(ticketNumber: _ticketNumber);
-      await tripProvider.updateTrip(updatedTrip);
-    }
   }
 
   Future<void> _editSeat() async {
@@ -298,11 +279,6 @@ class _TripDetailScreenState extends State<TripDetailScreen>
     }
   }
 
-  int _getDaysUntil(DateTime date) {
-    final now = DateTime.now();
-    return date.isBefore(now) ? 0 : date.difference(now).inDays;
-  }
-
   Future<BitmapDescriptor> _createCustomMarkerIcon(bool isDeparture) async {
     final ui.PictureRecorder pictureRecorder = ui.PictureRecorder();
     final Canvas canvas = Canvas(pictureRecorder);
@@ -313,13 +289,13 @@ class _TripDetailScreenState extends State<TripDetailScreen>
         : Theme.of(context).colorScheme.secondary;
 
     final Paint shadowPaint = Paint()
-      ..color = Theme.of(context).colorScheme.onSurface.withOpacity(0.3)
+      ..color = Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
     canvas.drawCircle(
         const Offset(size / 2, size / 2 + 4), size / 2.5, shadowPaint);
 
     final Paint circlePaint = Paint()
-      ..color = Theme.of(context).colorScheme.background;
+      ..color = Theme.of(context).colorScheme.surface;
     canvas.drawCircle(
         const Offset(size / 2, size / 2), size / 2.2, circlePaint);
 
@@ -426,7 +402,8 @@ class _TripDetailScreenState extends State<TripDetailScreen>
             Polyline(
               polylineId: PolylineId('route_glow'),
               points: boundPoints,
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.18),
+              color:
+                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.18),
               width: 16,
               polylineCap: Cap.roundCap,
             ),
@@ -451,7 +428,8 @@ class _TripDetailScreenState extends State<TripDetailScreen>
             Polyline(
               polylineId: PolylineId('route_glow'),
               points: polylinePoints,
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.18),
+              color:
+                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.18),
               width: 16,
               polylineCap: Cap.roundCap,
             ),
@@ -541,7 +519,7 @@ class _TripDetailScreenState extends State<TripDetailScreen>
     final shouldShowRealtime = now.isBefore(sixHoursAfterDeparture);
 
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.background,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
@@ -582,7 +560,7 @@ class _TripDetailScreenState extends State<TripDetailScreen>
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.background,
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(24),
                   topRight: Radius.circular(24),
@@ -609,11 +587,11 @@ class _TripDetailScreenState extends State<TripDetailScreen>
                             _realtimeInfo!['disruptionType'] as String),
                         iconColor: _getDisruptionColor(
                             _realtimeInfo!['disruptionType'] as String),
-                        backgroundColor: _getDisruptionBackgroundColor(
+                        surfaceColor: _getDisruptionBackgroundColor(
                             _realtimeInfo!['disruptionType'] as String),
                         borderColor: _getDisruptionColor(
                                 _realtimeInfo!['disruptionType'] as String)
-                            .withOpacity(0.3),
+                            .withValues(alpha: 0.3),
                         titleColor: _getDisruptionColor(
                             _realtimeInfo!['disruptionType'] as String),
                         subtitleColor: Theme.of(context).colorScheme.onSurface,
@@ -683,17 +661,16 @@ class _TripDetailScreenState extends State<TripDetailScreen>
                   if (shouldShowRealtime && _realtimeInfo != null ||
                       shouldShowRealtime && _isLoadingRealtime ||
                       shouldShowRealtime && _realtimeError != null)
-                    const SizedBox(height: 24),
-                  //if (shouldShowRealtime) _buildCountdownCard(l10n),
-                  if (shouldShowRealtime) const SizedBox(height: 24),
+                    //if (shouldShowRealtime) _buildCountdownCard(l10n),
+                    if (shouldShowRealtime) const SizedBox(height: 10),
                   _buildJourneyInfoCard(l10n),
 
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 10),
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     child: _buildTicketInfoCard(l10n),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 10),
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     child: _buildCarbonFootprintCard(l10n),
@@ -819,7 +796,7 @@ class _TripDetailScreenState extends State<TripDetailScreen>
                             color: Theme.of(context)
                                 .colorScheme
                                 .onSurface
-                                .withOpacity(0.3)),
+                                .withValues(alpha: 0.3)),
                       ),
                       Container(
                           width: 8,
@@ -863,74 +840,13 @@ class _TripDetailScreenState extends State<TripDetailScreen>
     );
   }
 
-  Widget _buildCountdownCard(AppLocalizations l10n) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.schedule,
-                  color: Theme.of(context).colorScheme.primary,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Départ dans',
-                  style: AppTypography.headlineSmall.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildCountdownUnit(_getDaysUntil(trip.departureTime), 'JOURS'),
-                _buildCountdownUnit(
-                    trip.departureTime
-                        .difference(DateTime.now())
-                        .inHours
-                        .remainder(24),
-                    'HEURES'),
-                _buildCountdownUnit(
-                    trip.departureTime
-                        .difference(DateTime.now())
-                        .inMinutes
-                        .remainder(60),
-                    'MINUTES'),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCountdownUnit(int value, String label) {
-    return Column(
-      children: [
-        Text(value.toString(), style: AppTypography.displayMedium),
-        Text(label.toUpperCase(),
-            style: AppTypography.labelMedium
-                .copyWith(color: Theme.of(context).colorScheme.onSurface)),
-      ],
-    );
-  }
-
   Widget _buildJourneyInfoCard(AppLocalizations l10n) {
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Theme.of(context).dividerColor.withOpacity(0.08),
+          color: Theme.of(context).dividerColor.withValues(alpha: 0.08),
           width: 1,
         ),
       ),
@@ -979,7 +895,7 @@ class _TripDetailScreenState extends State<TripDetailScreen>
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Theme.of(context).dividerColor.withOpacity(0.08),
+          color: Theme.of(context).dividerColor.withValues(alpha: 0.08),
           width: 1,
         ),
       ),
@@ -1042,7 +958,7 @@ class _TripDetailScreenState extends State<TripDetailScreen>
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Theme.of(context).dividerColor.withOpacity(0.08),
+          color: Theme.of(context).dividerColor.withValues(alpha: 0.08),
           width: 1,
         ),
       ),
@@ -1093,7 +1009,10 @@ class _TripDetailScreenState extends State<TripDetailScreen>
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .primary
+                      .withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
@@ -1113,10 +1032,14 @@ class _TripDetailScreenState extends State<TripDetailScreen>
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.05),
+              color:
+                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                color: Theme.of(context)
+                    .colorScheme
+                    .primary
+                    .withValues(alpha: 0.2),
               ),
             ),
             child: Column(
@@ -1136,7 +1059,7 @@ class _TripDetailScreenState extends State<TripDetailScreen>
                     color: Theme.of(context)
                         .colorScheme
                         .onSurface
-                        .withOpacity(0.8),
+                        .withValues(alpha: 0.8),
                   ),
                 ),
                 Text(
@@ -1145,7 +1068,7 @@ class _TripDetailScreenState extends State<TripDetailScreen>
                     color: Theme.of(context)
                         .colorScheme
                         .onSurface
-                        .withOpacity(0.8),
+                        .withValues(alpha: 0.8),
                   ),
                 ),
                 Text(
@@ -1154,7 +1077,7 @@ class _TripDetailScreenState extends State<TripDetailScreen>
                     color: Theme.of(context)
                         .colorScheme
                         .onSurface
-                        .withOpacity(0.8),
+                        .withValues(alpha: 0.8),
                   ),
                 ),
               ],
@@ -1200,7 +1123,7 @@ class _TripDetailScreenState extends State<TripDetailScreen>
             color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: Theme.of(context).dividerColor.withOpacity(0.08),
+              color: Theme.of(context).dividerColor.withValues(alpha: 0.08),
               width: 1,
             ),
           ),
@@ -1273,7 +1196,10 @@ class _TripDetailScreenState extends State<TripDetailScreen>
           Text(
             label,
             style: AppTypography.bodyMedium.copyWith(
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+              color: Theme.of(context)
+                  .colorScheme
+                  .onSurface
+                  .withValues(alpha: 0.7),
             ),
           ),
           Text(
@@ -1299,7 +1225,10 @@ class _TripDetailScreenState extends State<TripDetailScreen>
           Text(
             label,
             style: AppTypography.bodyMedium.copyWith(
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+              color: Theme.of(context)
+                  .colorScheme
+                  .onSurface
+                  .withValues(alpha: 0.7),
             ),
           ),
           Row(
@@ -1317,7 +1246,10 @@ class _TripDetailScreenState extends State<TripDetailScreen>
                 onPressed: isEnabled ? onTap : null,
                 color: isEnabled
                     ? Theme.of(context).colorScheme.primary
-                    : Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+                    : Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.3),
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
               ),
@@ -1375,10 +1307,12 @@ class _TripDetailScreenState extends State<TripDetailScreen>
         flipLetterHeight: 25,
         flipLetterWidth: 18,
         hingeWidth: 0.4,
-        hingeColor: Theme.of(context).colorScheme.secondary.withOpacity(0.5),
+        hingeColor:
+            Theme.of(context).colorScheme.secondary.withValues(alpha: 0.5),
         startColors: [Theme.of(context).colorScheme.primary],
         letterColors: [Theme.of(context).colorScheme.onPrimary],
-        borderColor: Theme.of(context).colorScheme.onPrimary.withOpacity(0.3),
+        borderColor:
+            Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.3),
         endColors: [Theme.of(context).colorScheme.primary],
         letterSpacing: 1,
         minFlipDelay: 50,

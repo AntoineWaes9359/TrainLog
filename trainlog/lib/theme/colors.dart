@@ -184,7 +184,7 @@ class AppColors {
 
   /// Retourne une couleur avec opacité
   static Color withOpacity(Color color, double opacity) {
-    return color.withOpacity(opacity);
+    return color.withValues(alpha: opacity);
   }
 
   /// Retourne une couleur plus claire

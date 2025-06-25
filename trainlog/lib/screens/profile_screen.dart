@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:trainlog/theme/app_theme.dart';
 import 'package:trainlog/theme/typography.dart';
 import '../providers/auth_provider.dart';
 import '/l10n/app_localizations.dart';
@@ -11,15 +10,14 @@ class ProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
-    final user = authProvider.user;
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.background,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
-            backgroundColor: Theme.of(context).colorScheme.background,
+            backgroundColor: Theme.of(context).colorScheme.surface,
             pinned: true,
             elevation: 0,
             expandedHeight: 100,
@@ -55,7 +53,7 @@ class ProfileScreen extends StatelessWidget {
                           color: Theme.of(context)
                               .colorScheme
                               .shadow
-                              .withOpacity(0.1),
+                              .withValues(alpha: 0.1),
                           blurRadius: 20,
                           offset: const Offset(0, 4),
                         )
@@ -92,7 +90,7 @@ class ProfileScreen extends StatelessWidget {
                                 color: Theme.of(context)
                                     .colorScheme
                                     .onPrimary
-                                    .withOpacity(0.8)),
+                                    .withValues(alpha: 0.8)),
                           ),
                         ],
                       ),

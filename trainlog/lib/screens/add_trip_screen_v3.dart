@@ -1,18 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:trainlog/theme/colors.dart';
 import '../providers/trip_provider_improved.dart';
 import '../models/trip.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/sncf_service.dart';
-import '../widgets/train_logo.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:uuid/uuid.dart';
 import '../services/sncb_service.dart';
 import '../services/trenitalia_service.dart';
-import '../services/train_company_service.dart';
 import '../config/api_keys.dart';
 import '../utils/distance_calculator.dart';
 import '../services/ticket_scanner_service.dart';
@@ -87,8 +83,8 @@ class _AddTripScreenV3State extends State<AddTripScreenV3> {
   void initState() {
     super.initState();
     _sncfService = SncfService(ApiKeys.sncfApiKey);
-    _sncbService = SncbService(ApiKeys.sncbApiKey);
-    _trenitaliaService = TrenitaliaService(ApiKeys.trenitaliaApiKey);
+    _sncbService = SncbService();
+    _trenitaliaService = TrenitaliaService();
     _currentService = _sncfService; // Service par défaut
 
     // Si une image initiale est fournie, la traiter directement
@@ -294,7 +290,7 @@ class _AddTripScreenV3State extends State<AddTripScreenV3> {
                     const BorderRadius.vertical(top: Radius.circular(20)),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -342,7 +338,7 @@ class _AddTripScreenV3State extends State<AddTripScreenV3> {
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
+                          color: Colors.black.withValues(alpha: 0.05),
                           blurRadius: 10,
                           offset: const Offset(0, 2),
                         ),
@@ -1151,7 +1147,7 @@ class _AddTripScreenV3State extends State<AddTripScreenV3> {
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -1274,7 +1270,7 @@ class _AddTripScreenV3State extends State<AddTripScreenV3> {
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
+                          color: Colors.black.withValues(alpha: 0.05),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
@@ -1291,7 +1287,7 @@ class _AddTripScreenV3State extends State<AddTripScreenV3> {
                             borderRadius: BorderRadius.circular(12),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
+                                color: Colors.black.withValues(alpha: 0.05),
                                 blurRadius: 5,
                                 offset: const Offset(0, 2),
                               ),
@@ -1378,7 +1374,7 @@ class _AddTripScreenV3State extends State<AddTripScreenV3> {
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
+                          color: Colors.black.withValues(alpha: 0.05),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
@@ -1398,7 +1394,7 @@ class _AddTripScreenV3State extends State<AddTripScreenV3> {
                             borderRadius: BorderRadius.circular(12),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
+                                color: Colors.black.withValues(alpha: 0.05),
                                 blurRadius: 5,
                                 offset: const Offset(0, 2),
                               ),
@@ -1485,7 +1481,7 @@ class _AddTripScreenV3State extends State<AddTripScreenV3> {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -1502,7 +1498,7 @@ class _AddTripScreenV3State extends State<AddTripScreenV3> {
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withValues(alpha: 0.05),
                       blurRadius: 5,
                       offset: const Offset(0, 2),
                     ),

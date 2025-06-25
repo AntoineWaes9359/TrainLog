@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:trainlog/theme/app_theme.dart';
 import 'package:trainlog/theme/colors.dart';
 import 'package:trainlog/theme/typography.dart';
 import '../providers/trip_provider_improved.dart';
@@ -124,11 +123,11 @@ class _StatsScreenState extends State<StatsScreen> {
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.background,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
-            backgroundColor: Theme.of(context).colorScheme.background,
+            backgroundColor: Theme.of(context).colorScheme.surface,
             pinned: true,
             elevation: 0,
             expandedHeight: 100,
@@ -136,8 +135,8 @@ class _StatsScreenState extends State<StatsScreen> {
               titlePadding: const EdgeInsets.only(left: 24, bottom: 16),
               title: Text(
                 l10n.statsTitle,
-                style: AppTypography.displayMedium.copyWith(
-                    color: Theme.of(context).colorScheme.onBackground),
+                style: AppTypography.displayMedium
+                    .copyWith(color: Theme.of(context).colorScheme.onSurface),
               ),
               centerTitle: false,
             ),
@@ -227,7 +226,8 @@ class _StatsScreenState extends State<StatsScreen> {
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
+                color:
+                    Theme.of(context).colorScheme.shadow.withValues(alpha: 0.1),
                 blurRadius: 20,
                 offset: const Offset(0, 4),
               )
@@ -251,7 +251,7 @@ class _StatsScreenState extends State<StatsScreen> {
                 Text(
                   'PASSPORT • PASS • PASAPORTE',
                   style: AppTypography.bodySmall.copyWith(
-                    color: AppColors.white.withOpacity(0.6),
+                    color: AppColors.white.withValues(alpha: 0.6),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -267,7 +267,7 @@ class _StatsScreenState extends State<StatsScreen> {
                           Text(
                             l10n.trains,
                             style: AppTypography.bodySmall.copyWith(
-                              color: AppColors.white.withOpacity(0.8),
+                              color: AppColors.white.withValues(alpha: 0.8),
                             ),
                           ),
                           Text(
@@ -280,7 +280,7 @@ class _StatsScreenState extends State<StatsScreen> {
                           Text(
                             '$longDistanceTrips Long Distance',
                             style: AppTypography.bodySmall.copyWith(
-                              color: AppColors.white.withOpacity(0.8),
+                              color: AppColors.white.withValues(alpha: 0.8),
                             ),
                           ),
                         ],
@@ -294,7 +294,7 @@ class _StatsScreenState extends State<StatsScreen> {
                           Text(
                             l10n.distance,
                             style: AppTypography.bodySmall.copyWith(
-                              color: AppColors.white.withOpacity(0.8),
+                              color: AppColors.white.withValues(alpha: 0.8),
                             ),
                           ),
                           Row(
@@ -310,7 +310,7 @@ class _StatsScreenState extends State<StatsScreen> {
                               Text(
                                 l10n.kilometers,
                                 style: AppTypography.bodySmall.copyWith(
-                                  color: AppColors.white.withOpacity(0.8),
+                                  color: AppColors.white.withValues(alpha: 0.8),
                                 ),
                               ),
                             ],
@@ -318,7 +318,7 @@ class _StatsScreenState extends State<StatsScreen> {
                           Text(
                             _getRandomDistanceComparison(totalDistance),
                             style: AppTypography.bodySmall.copyWith(
-                              color: AppColors.white.withOpacity(0.8),
+                              color: AppColors.white.withValues(alpha: 0.8),
                             ),
                           ),
                         ],
@@ -338,7 +338,7 @@ class _StatsScreenState extends State<StatsScreen> {
                           Text(
                             l10n.time,
                             style: AppTypography.bodySmall.copyWith(
-                              color: AppColors.white.withOpacity(0.8),
+                              color: AppColors.white.withValues(alpha: 0.8),
                             ),
                           ),
                           Text(
@@ -359,7 +359,7 @@ class _StatsScreenState extends State<StatsScreen> {
                           Text(
                             l10n.stations,
                             style: AppTypography.bodySmall.copyWith(
-                              color: AppColors.white.withOpacity(0.8),
+                              color: AppColors.white.withValues(alpha: 0.8),
                             ),
                           ),
                           Text(
@@ -380,7 +380,7 @@ class _StatsScreenState extends State<StatsScreen> {
                           Text(
                             l10n.companies,
                             style: AppTypography.bodySmall.copyWith(
-                              color: AppColors.white.withOpacity(0.8),
+                              color: AppColors.white.withValues(alpha: 0.8),
                             ),
                           ),
                           Text(
@@ -399,7 +399,7 @@ class _StatsScreenState extends State<StatsScreen> {
                 // Bouton Voir toutes les statistiques
                 Container(
                   decoration: BoxDecoration(
-                    color: AppColors.white.withOpacity(0.1),
+                    color: AppColors.white.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Material(
@@ -456,7 +456,8 @@ class _StatsScreenState extends State<StatsScreen> {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
+                color:
+                    Theme.of(context).colorScheme.shadow.withValues(alpha: 0.1),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -510,8 +511,6 @@ class _StatsScreenState extends State<StatsScreen> {
   }
 
   Widget _buildInfoCardsExample() {
-    final l10n = AppLocalizations.of(context)!;
-
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -538,8 +537,8 @@ class _StatsScreenState extends State<StatsScreen> {
             icon: Icons.warning,
             title: 'Attention',
             subtitle: 'InfoCard sans description',
-            backgroundColor: Colors.orange.withOpacity(0.1),
-            borderColor: Colors.orange.withOpacity(0.3),
+            surfaceColor: Colors.orange.withValues(alpha: 0.1),
+            borderColor: Colors.orange.withValues(alpha: 0.3),
             iconColor: Colors.orange,
           ),
         ],

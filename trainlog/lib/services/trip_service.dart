@@ -1,11 +1,9 @@
 import 'dart:convert';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/trip.dart';
 
 class TripService {
   static const String _tripsKey = 'trips';
-  final _storage = const FlutterSecureStorage();
   late SharedPreferences _prefs;
 
   Future<void> init() async {

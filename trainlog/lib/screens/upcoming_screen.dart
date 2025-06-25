@@ -4,12 +4,10 @@ import 'package:trainlog/theme/colors.dart';
 import 'package:trainlog/theme/typography.dart';
 import '../providers/trip_provider_improved.dart';
 import 'trip_detail_screen.dart';
-import 'package:intl/intl.dart';
 import '../widgets/train_logo.dart';
 import 'dart:async';
 import 'package:flutter/services.dart';
 import '../widgets/common/time_station_block.dart';
-import '../widgets/common/info_card.dart';
 import '/l10n/app_localizations.dart';
 import '../utils/date_formatter.dart';
 
@@ -75,7 +73,7 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
         statusBarColor: Colors.transparent,
       ),
       child: Scaffold(
-        backgroundColor: Theme.of(context).colorScheme.background,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         body: Consumer<TripProvider>(
           builder: (context, tripProvider, child) {
             if (tripProvider.isLoading) {
@@ -88,7 +86,7 @@ class _UpcomingScreenState extends State<UpcomingScreen> {
             return CustomScrollView(
               slivers: [
                 SliverAppBar(
-                  backgroundColor: Theme.of(context).colorScheme.background,
+                  backgroundColor: Theme.of(context).colorScheme.surface,
                   pinned: true,
                   elevation: 0,
                   expandedHeight: 100,

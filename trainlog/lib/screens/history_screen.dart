@@ -12,7 +12,6 @@ import 'package:trainlog/widgets/train_logo.dart';
 import 'package:trainlog/theme/typography.dart';
 import '/l10n/app_localizations.dart';
 import 'package:trainlog/utils/date_formatter.dart';
-import 'package:trainlog/widgets/common/time_station_block.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -23,7 +22,6 @@ class HistoryScreen extends StatefulWidget {
 
 class _HistoryScreenState extends State<HistoryScreen> {
   final Set<Polyline> _polylines = {};
-  bool _isLoadingPaths = false;
 
   @override
   void initState() {
@@ -39,12 +37,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final tripProvider = Provider.of<TripProvider>(context, listen: false);
     final trips = tripProvider.pastTrips;
 
-    setState(() => _isLoadingPaths = true);
-
     final newPolylines = <Polyline>{};
     for (final trip in trips) {
-      if (trip.path != null && trip.path!.isNotEmpty) {
-        final List<LatLng> points = trip.path!
+      if (trip.path.isNotEmpty) {
+        final List<LatLng> points = trip.path
             .map((point) => LatLng(point.latitude, point.longitude))
             .toList();
 
@@ -54,7 +50,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
             Polyline(
               polylineId: PolylineId('trip_glow_${trip.id}'),
               points: points,
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.25),
+              color:
+                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.25),
               width: 10,
               polylineCap: Cap.roundCap,
             ),
@@ -76,7 +73,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
     if (mounted) {
       setState(() {
         _polylines.addAll(newPolylines);
-        _isLoadingPaths = false;
       });
     }
   }
@@ -84,10 +80,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final topPadding = MediaQuery.of(context).padding.top;
 
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.background,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: Consumer<TripProvider>(
         builder: (context, tripProvider, child) {
           if (tripProvider.isLoading) {
@@ -123,7 +118,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 expandedHeight: 500.0,
                 pinned: true,
                 floating: false,
-                backgroundColor: Theme.of(context).colorScheme.background,
+                backgroundColor: Theme.of(context).colorScheme.surface,
                 elevation: 0,
                 flexibleSpace: FlexibleSpaceBar(
                   titlePadding: const EdgeInsets.only(left: 24, bottom: 16),
@@ -138,13 +133,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           color: Theme.of(context)
                               .colorScheme
                               .surface
-                              .withOpacity(0.8),
+                              .withValues(alpha: 0.8),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: Theme.of(context)
                                 .colorScheme
                                 .onSurface
-                                .withOpacity(0.1),
+                                .withValues(alpha: 0.1),
                             width: 1,
                           ),
                         ),

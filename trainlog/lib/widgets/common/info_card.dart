@@ -15,6 +15,8 @@ class InfoCard extends StatelessWidget {
   final Color? descriptionColor;
   final VoidCallback? onTap;
 
+  final dynamic surfaceColor;
+
   const InfoCard({
     super.key,
     required this.title,
@@ -22,12 +24,13 @@ class InfoCard extends StatelessWidget {
     this.description,
     required this.icon,
     this.iconColor,
-    this.backgroundColor,
+    this.surfaceColor,
     this.borderColor,
     this.titleColor,
     this.subtitleColor,
     this.descriptionColor,
     this.onTap,
+    this.backgroundColor,
   });
 
   @override

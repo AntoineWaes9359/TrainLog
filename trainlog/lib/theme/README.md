@@ -155,7 +155,7 @@ class MonWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: AppColors.background,
+      color: AppColors.surface,
       child: Text(
         'Mon texte',
         style: AppTypography.headlineMedium.copyWith(

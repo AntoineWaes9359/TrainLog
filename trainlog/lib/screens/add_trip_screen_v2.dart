@@ -27,7 +27,6 @@ class _AddTripScreenV2State extends State<AddTripScreenV2> {
   DateTime _selectedDate = DateTime.now();
   bool _isManualMode = false;
   String _selectedCompany = 'SNCF';
-  bool _isLoading = false;
   List<Map<String, dynamic>> _suggestedDepartureStations = [];
   List<Map<String, dynamic>> _suggestedArrivalStations = [];
   String? _departureStationId;

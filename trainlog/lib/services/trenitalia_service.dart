@@ -1,18 +1,14 @@
-import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:intl/intl.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'train_company_service.dart';
 import '../services/ticket_scanner_service.dart';
-import '../utils/distance_calculator.dart';
 
 class TrenitaliaService implements TrainCompanyService {
-  final String _apiKey;
   final _ticketScanner = TicketScannerService();
 
-  TrenitaliaService(this._apiKey);
+  TrenitaliaService();
 
   @override
   String get companyName => 'Trenitalia';

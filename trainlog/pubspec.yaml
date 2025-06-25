@@ -66,6 +66,8 @@ dependencies:
     sdk: flutter
   adaptive_theme: ^3.7.0
   flutter_gen:
+  firebase_storage:
+  firebase_storage_web:
   
 dev_dependencies:
   flutter_test:

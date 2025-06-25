@@ -64,7 +64,7 @@ class _ScanLoadingState extends State<ScanLoading>
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.white.withOpacity(0.2),
+                    color: Colors.white.withValues(alpha: 0.2),
                     blurRadius: 10,
                     spreadRadius: 2,
                   ),
@@ -150,7 +150,7 @@ class ScanPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.white.withOpacity(0.3)
+      ..color = Colors.white.withValues(alpha: 0.3)
       ..style = PaintingStyle.fill;
 
     // Créer un dégradé pour l'effet de scan
@@ -158,9 +158,9 @@ class ScanPainter extends CustomPainter {
       begin: Alignment.topCenter,
       end: Alignment.bottomCenter,
       colors: [
-        Colors.white.withOpacity(0),
-        Colors.white.withOpacity(0.5),
-        Colors.white.withOpacity(0),
+        Colors.white.withValues(alpha: 0),
+        Colors.white.withValues(alpha: 0.5),
+        Colors.white.withValues(alpha: 0),
       ],
       stops: const [0.0, 0.5, 1.0],
     );
